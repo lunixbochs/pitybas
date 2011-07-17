@@ -1,94 +1,16 @@
 # -*- coding: utf-8 -*-
-import string
+import tokens
+import interpret
 
-SYMBOLS = [
-	'+', '-', '*', '/', u'‾', '^', u'√',
-	'=', u'≠', '>', u'≥', '<', u'≤',
-	u'→', '!', u'π', '%', 'r', u'°',
-	',', '(', ')', '[', ']', '{', '}',
-]
+LOOKUP = {}
+LOOKUP.update(tokens.Token.tokens)
+LOOKUP.update(tokens.Variable.tokens)
+LOOKUP.update(tokens.Function.tokens)
 
-TOKENS = [
-	'>=', '<=', '->', u'¹', u'²', u'³',
-	'and', 'Archive', 'AxesOff', 'AxesOn', 'a+bi',
-	'Boxplot',
-	'Clear Entries', 'ClockOff', 'ClockOn',
-	'ClrAllLists', 'ClrDraw', 'ClrHome', 'ClrList', 'ClrTable',
-	'Connected', 'CoordOff', 'CoordOn', 'CubicReg',
-	u'►Dec', 'Degree', 'DelVar', 'DependAsk', 'DependAuto',
-	'DiagnosticOff', 'DiagnosticOn', 'Disp', 'DispGraph',
-	'DispTable', u'►DMS', 'Dot', 'DrawF', 'DrawInv',
-	'e', 'E', 'Else', 'End', 'Eng', 'ExecLib', 'ExpReg',
-	'ExprOff', 'ExprOn',
-	'GarbageCollect', 'getDate', 'getDtFmt', 'getKey', 'getTime',
-	'getTmFmt', 'Goto', 'GridOff', 'GridOn', 'G-T',
-	'Histogram', 'Horiz', 'Horizontal',
-	'i', 'If', 'IndpntAsk', 'IndpntAuto', 'Input', 'IsClockOn',
-	u'∟', 'LabelOff', 'LabelOn', 'Lbl', 'LinReg(a+bx)', 'LinReg(ax+b)',
-	'LinRegTInt', 'LinRegTTest', 'LnReg', 'Logistic',
-	'Manual-Fit', 'Med-Med', 'ModBoxplot',
-	'n', 'nCr', 'n/d', 'Normal', 'NormProbPlot', 'nPr',
-	'or',
-	'Param', 'Pause', 'PlotsOff', 'PlotsOn', 'Pmt_Bgn', 'Pmt_End',
-	u'►Polar', 'Polar', 'PolarGC', 'prgm', 'Prompt', 'PwrReg',
-	'QuadReg', 'QuartReg',
-	'Radian', 'rand', u're^θi', 'Real', 'RecallGDB', 'RecallPic',
-	u'►Rect', 'RectGC', 'Repeat', 'Return',
-	'Scatter', 'Sci', 'Seq', 'Sequential', 'SetUpEditor', 'Simul',
-	'SinReg', 'startTmr', 'Stop', 'StoreGDB', 'StorePic',
-	'Then', 'Time', 'TInterval', 'Trace', 'T-Test', 'tvm_FV', 'tvm_I%',
-	'tvm_N', 'tvm_Pmt', 'tvm_PV',
-	'UnArchive', 'uvAxes', 'uwAxes',
-	'Vertical', 'vwAxes',
-	'Web', 'While',
-	'xor', 'xyLine',
-	'ZBox', 'ZDecimal', 'ZInteger', 'ZInterval', 'Zoom In', 'Zoom Out',
-	'ZoomFit', 'ZoomRcl', 'ZoomStat', 'ZoomSto', 'ZPrevious', 'ZSquare',
-	'ZStandard', 'ZTrig'
-]
-
-VARIABLES = [
-	'Ans',
-	'Xmin', 'Xmax', 'Ymin', 'Ymax', u'π'
-]+list(string.uppercase)
-
-FUNCTIONS = [
-	u'√', u'³√',
-	'augment', 'angle', 'ANOVA',
-	'bal', 'binomcdf', 'binompdf',
-	'checkTmr', u'χ²cdf', u'χ²pdf', u'χ²-Test', u'χ²GOF-Test',
-	'Circle', 'conj', 'cos', u'cosֿ¹', 'cosh', u'coshֿ¹', 'cumSum',
-	'dayOfWk', 'dbd', 'det', 'dim', 'DS<',
-	'e^', u'►Eff', u'Equ►String', 'expr',
-	'Fcdf', 'Fill', 'fMax', 'fMin', 'fnInt', 'For', 'fPart', 'Fpdf',
-	'Fix', 'Float', 'FnOff', 'FnOn', u'►Frac', 'Full', 'Func',
-	'gcd', 'geometcdf', 'geometpdf', 'Get', 'GetCalc', 'getDtStr',
-	'getTmStr', 'GraphStyle',
-	'identity', 'imag', 'inString', 'int', u'ΣInt', 'invNorm',
-	'invT', 'iPart', 'irr', 'IS>',
-	'lcm', 'length', 'Line', u'ΔList', u'List►matr', 'ln','log',
-	'logBASE',
-	u'Matr►list', 'max', 'mean', 'median', 'Menu', 'min',
-	'nDeriv', u'►Nom', 'normalcdf', 'normalpdf', 'not', 'npv',
-	'OpenLib', 'Output',
-	'Plot1', 'Plot2', 'Plot3', 'poissoncdf', 'poissonpdf',
-	u'ΣPrn', 'prod', 'Pt-Change', 'Pt-Off', 'Pt-On', 'Pxl-Change',
-	'Pxl-Off', 'Pxl-On', 'pxl-Test', u'P►Rx', u'P►Ry',
-	'randBin', 'randInt', 'randIntNoRep', 'randM', 'randNorm', 'real',
-	'ref', 'remainder', 'round', '*row', 'row+', '*row+', 'rowSwap',
-	'rref', u'R►Pr', u'R►Pθ',
-	'Select', 'Send', 'seq', 'setDate', 'setDtFmt', 'setTime',
-	'setTmFmt', 'Shade', u'Shadeχ²', 'ShadeF', 'ShadeNorm',
-	'Shade_t', 'sin', u'sinֿ¹', 'sinh', u'sinhֿ¹', 'solve', 'SortA',
-	'SortD', 'stdDev', u'String►Equ', 'sub', 'sum',
-	'tan', u'tanֿ¹', 'Tangent', 'tanh', u'tanhֿ¹', 'tcdf', 'Text',
-	'timeCnv', 'tpdf',
-	'variance',
-	'Z-Test',
-
-	'Pt-On', 'For',
-	'abs', 'min', 'max', 'sqrt'
-]
+SYMBOLS = []
+TOKENS = tokens.Token.tokens.keys()
+VARIABLES = tokens.Variable.tokens.keys()
+FUNCTIONS = tokens.Function.tokens.keys()
 
 FUNCTIONS = [func+'(' for func in FUNCTIONS]
 TOKENS += VARIABLES + FUNCTIONS
@@ -114,7 +36,8 @@ class Parser:
 		self.pos = 0
 		self.line = 0
 		self.lines = []
-		self.ast = []
+
+		self.stack = []
 	
 	def clean(self):
 		self.source = self.source.replace('\r\n', '\n').replace('\r', '\n')
@@ -127,6 +50,27 @@ class Parser:
 	
 	def more(self):
 		return self.pos < self.length
+	
+	def cleanup(self):
+		for line in self.lines:
+			if line:
+				new = []
+				expr = None
+				for token in line:
+					if token.priority > tokens.Pri.INVALID:
+						expr = expr or interpret.Expression()
+						expr.append(token)
+					else:
+						if expr:
+							new.append(expr)
+
+						expr = None
+						new.append(token)
+				
+				if expr:
+					new.append(expr)
+				
+				yield new
 	
 	def parse(self):
 		while self.more():
@@ -141,18 +85,22 @@ class Parser:
 			elif char in SYMBOLS:
 				result = self.symbol()
 			elif '0' <= char <= '9':
-				result = self.number()
+				result = tokens.Value(self.number())
 			elif ('a' <= char <= 'z') or ('A' <= char <= 'Z'):
 				result = self.token()
 			elif char == '"':
-				result = self.string()
+				result = tokens.Value(self.string())
 			else:
 				self.error('could not tokenize: %s' % repr(char))
 			
+			# TODO: handle parens, use the stack for them
+			# functions push the stack into argument mode
+			# open paren outside a function pushes the stack into expression mode
+			# TODO: check for comma here, turn it into a tuple if we find one (used for Disp and functions)
+
 			self.add(result)
 		
-		for line in self.lines:
-			print '"' + ('", "'.join(line)) + '"'
+		return [line for line in self.cleanup()]
 	
 	def add(self, token):
 		while self.line >= len(self.lines):
@@ -166,15 +114,20 @@ class Parser:
 			return token
 		else:
 			char = self.source[self.pos]
-			self.inc()
-			return char
+			if char in LOOKUP:
+				self.inc()
+				return LOOKUP[char]()
+			else:
+				# a second time to throw the error
+				self.token()
+
 	
 	def token(self, sub=False):
 		remaining = self.source[self.pos:]
 		for token in TOKENS:
 			if remaining.startswith(token):
 				self.inc(len(token))
-				return token
+				return LOOKUP[token]()
 		else:
 			if not sub:
 				near = remaining[:8].split('\n',1)[0]
@@ -199,7 +152,7 @@ class Parser:
 			if num[-1] == '.' or num[0] == '.':
 				pass # TODO: verify behavior of 1. and .1 on device
 
-		return num
+		return float(num)
 	
 	def string(self):
 		ret = ''

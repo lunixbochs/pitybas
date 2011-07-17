@@ -1,0 +1,20 @@
+expressions:
+
+1 + 2 (A + 2 * 3)
+we need to follow order of operations
+we can optimize parens out? - the above becomes 9(A+2)
+how do we follow order of operations in simple asm :<
+
+compiler must reorder expressions into order of ops? then we can just execute in order
+
+next: how to break an expression into simple bytecode
+
+If (expr)
+Then
+
+End
+
+dedicated expression processing function. find the bounds of the expression, then group (parens), find types (1, "A"), symbols+tokens (+, -, *, /, And, Or)
+order the bytecode at each level of parens: (parens, exp, mult, div, add, sub, boolean)
+
+then we can run the bytecode in order.
