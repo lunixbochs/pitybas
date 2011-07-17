@@ -74,7 +74,7 @@ class Expression:
 			left = expr.pop(i-1).get(vm)
 			
 			token = expr[i-1]
-			expr[i-1] = Value(token.run(vm, left, right))
+			expr[i-1] = Value(token.run(left, right))
 		# TODO: set Ans here if appropriate
 
 		return expr[0].get(vm)

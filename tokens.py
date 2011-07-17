@@ -222,7 +222,6 @@ class Plus(AddSub):
 	token = '+'
 
 	def run(self, left, right):
-		print left, '+', right
 		return left + right
 
 class Minus(AddSub):
