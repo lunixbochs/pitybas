@@ -4,4 +4,5 @@ def go():
 	if 'interpret.py' in os.listdir('..') and\
 		not 'interpret.py' in os.listdir('.'):
 		os.chdir('..')
-		sys.path.append('.')
+
+	sys.path.append('.')
