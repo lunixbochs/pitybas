@@ -92,6 +92,11 @@ class Parser:
 		while self.more():
 			char = self.source[self.pos]
 			if char in ('\n', ':'):
+				# TODO: the Stor token needs to terminate bracket stacks too
+				# *and* needs to be special-cased in post()
+				while self.stack:
+					self.add(self.stack.pop())
+
 				self.inc()
 				self.line += 1
 				continue
