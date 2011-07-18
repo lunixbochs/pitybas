@@ -1,1 +1,1 @@
-you can currently run "python tests/parser.py disp.bas" to run the parser through a very basic test
+you can currently run "python tests/parser.py disp.bas" to run some very simple code
