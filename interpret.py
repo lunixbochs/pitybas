@@ -27,17 +27,10 @@ class Expression:
 		
 		return self
 	
-	def fill(self):
-		pass
-		# TODO: fill implied multiplication symbols
-		# TODO: test on a calc to see how functions
-		# respond to implied mult
-	
 	def order(self):
 		# this step returns a list of ordered indicies
 		# to help reduce tokens to a single value
 		# see tokens.Pri for an ordering explanation
-		self.fill()
 
 		order = {}
 
@@ -78,6 +71,9 @@ class Expression:
 		# TODO: set Ans here if appropriate
 
 		return expr[0].get(vm)
+	
+	def __repr__(self):
+		return 'E(%s)' % (' '.join(repr(token) for token in self.tokens))
 
 class Interpreter:
 	@classmethod

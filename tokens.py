@@ -5,6 +5,13 @@ def add_class(name, *args, **kwargs):
 	globals()[name] = type(name, args, kwargs)
 
 class Tracker(type):
+	def __new__(self, name, bases, attrs):
+		if not 'token' in attrs:
+			attrs['token'] = name
+
+		cls = type.__new__(self, name, bases, attrs)
+		return cls
+
 	def __init__(cls, name, bases, attrs):
 		if bases:
 			bases[-1].add(cls, name, attrs)
@@ -43,8 +50,6 @@ class Parent:
 	def add(cls, sub, name, attrs):
 		if 'token' in attrs:
 			name = attrs['token']
-		else:
-			attrs['token'] = name
 		
 		if name and not cls == Parent:
 			cls.tokens[name] = sub
@@ -74,6 +79,9 @@ class Parent:
 	def get(self, vm): raise InvalidOperation
 	def set(self, vm, value): raise InvalidOperation
 	def call(self, vm): raise InvalidOperation
+
+	def __repr__(self):
+		return self.token
 
 class Stub:
 	@classmethod
@@ -312,6 +320,9 @@ class Value(Const):
 		Variable.__init__(self)
 
 	def get(self, vm): return self.value
+
+	def __repr__(self):
+		return repr(self.value)
 
 class Ans(Const):
 	def get(self, vm): return vm.get_var('Ans')

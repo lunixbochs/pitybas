@@ -51,14 +51,21 @@ class Parser:
 	def more(self):
 		return self.pos < self.length
 	
-	def cleanup(self):
+	def post(self):
 		for line in self.lines:
 			if line:
 				new = []
 				expr = None
+				last_none = False
 				for token in line:
+					none = (token.priority == tokens.Pri.NONE)
+
 					if token.priority > tokens.Pri.INVALID:
 						expr = expr or interpret.Expression()
+						if none and last_none:
+							# fill in implied multiplication
+							expr.append(tokens.Mult())
+							
 						expr.append(token)
 					else:
 						if expr:
@@ -66,6 +73,8 @@ class Parser:
 
 						expr = None
 						new.append(token)
+					
+					last_none = none
 				
 				if expr:
 					new.append(expr)
@@ -100,7 +109,7 @@ class Parser:
 
 			self.add(result)
 		
-		return [line for line in self.cleanup()]
+		return [line for line in self.post()]
 	
 	def add(self, token):
 		while self.line >= len(self.lines):
@@ -152,7 +161,11 @@ class Parser:
 			if num[-1] == '.' or num[0] == '.':
 				pass # TODO: verify behavior of 1. and .1 on device
 
-		return float(num)
+		f, i = float(num), int(num)
+		if f != i:
+			return f
+		else:
+			return i
 	
 	def string(self):
 		ret = ''
