@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import tokens
-import interpret
+from expression import Expression
 
 LOOKUP = {}
 LOOKUP.update(tokens.Token.tokens)
@@ -28,6 +28,13 @@ class ParseError(Exception):
 
        def __str__(self):
            return self.msg
+
+bracketmap = {'(':')', '{':'}', '[':']'}
+
+class Bracketed(Expression):
+	def __init__(self, end):
+		self.end = bracketmap[end]
+		Expression.__init__(self)
 
 class Parser:
 	def __init__(self, source):
@@ -61,11 +68,11 @@ class Parser:
 					none = (token.priority == tokens.Pri.NONE)
 
 					if token.priority > tokens.Pri.INVALID:
-						expr = expr or interpret.Expression()
+						expr = expr or Expression()
 						if none and last_none:
 							# fill in implied multiplication
 							expr.append(tokens.Mult())
-							
+
 						expr.append(token)
 					else:
 						if expr:
@@ -91,6 +98,21 @@ class Parser:
 			elif char in ' \t':
 				self.inc()
 				continue
+			elif char in '([{':
+				self.stack.append(Bracketed(char))
+				self.inc()
+				continue
+			elif char in ')]}':
+				if self.stack:
+					stack = self.stack[-1]
+
+					if stack.end == char:
+						result = self.stack.pop()
+						self.inc()
+					else:
+						self.error('tried to end \'%s\' with: "%s" (expecting "%s")' % (stack, char, stack.end))
+				else:
+					self.error('encountered "%s" but we have no expression on the stack to terminate' % char)
 			elif char in SYMBOLS:
 				result = self.symbol()
 			elif '0' <= char <= '9':
@@ -112,10 +134,15 @@ class Parser:
 		return [line for line in self.post()]
 	
 	def add(self, token):
-		while self.line >= len(self.lines):
-			self.lines.append([])
-		
-		self.lines[self.line].append(token)
+		# TODO: if it's a function, push an Arguments instance to the stack
+		if self.stack:
+			stack = self.stack[-1]
+			stack.append(token)
+		else:
+			while self.line >= len(self.lines):
+				self.lines.append([])
+			
+			self.lines[self.line].append(token)
 	
 	def symbol(self):
 		token = self.token(True)

@@ -1,8 +1,20 @@
 # -*- coding: utf-8 -*-
 import string, math
 
+# helpers
+
 def add_class(name, *args, **kwargs):
 	globals()[name] = type(name, args, kwargs)
+
+# decorators
+
+def get(f):
+	def run(self, vm, left, right):
+		return f(self, vm, left.get(vm), right.get(vm))
+	
+	return run
+
+# magic classes
 
 class Tracker(type):
 	def __new__(self, name, bases, attrs):
@@ -184,11 +196,10 @@ class Repeat(Token):
 
 class Stor(Token):
 	token = u'→'
+	priority = Pri.SET
 
-	def run(self, vm):
-		@vm.expr
-		def run(e):
-			return e.right.set(e.left.get())
+	def run(self, vm, left, right):
+		right.set(vm, left)
 
 class Store(Stor): token = '->'
 
@@ -202,7 +213,6 @@ class Disp(Token):
 		
 		vm.inc()
 
-
 class Then(StubToken): pass
 class Else(StubToken): pass
 
@@ -212,13 +222,18 @@ class End(Token):
 
 # operators
 
-class Operator(Token, Stub): pass
+class Operator(Token, Stub):
+	@get
+	def run(self, vm, left, right):
+		return self.op(left, right)
+
 class AddSub(Operator): priority = Pri.ADDSUB
 class MultDiv(Operator): priority = Pri.MULTDIV
 class Bool(Operator):
 	priority = Pri.BOOL
 
-	def run(self, left, right):
+	@get
+	def run(self, vm, left, right):
 		if self.bool(left, right): return 1
 		return 0
 
@@ -229,25 +244,25 @@ class Logic(Bool): priority = Pri.LOGIC
 class Plus(AddSub):
 	token = '+'
 
-	def run(self, left, right):
+	def op(self, left, right):
 		return left + right
 
 class Minus(AddSub):
 	token = '-'
 
-	def run(self, left, right):
+	def op(self, left, right):
 		return left - right
 
 class Mult(MultDiv):
 	token = '*'
 
-	def run(self, left, right):
+	def op(self, left, right):
 		return left * right
 
 class Div(MultDiv):
 	token = '/'
 
-	def run(self, left, right):
+	def op(self, left, right):
 		return left / right
 
 # boolean
