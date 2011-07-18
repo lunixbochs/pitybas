@@ -1,5 +1,6 @@
 from parse import Parser
 from tokens import EOF, Value
+from errors import ExecutionError
 
 class Interpreter:
 	@classmethod

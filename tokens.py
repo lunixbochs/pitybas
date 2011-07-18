@@ -200,6 +200,7 @@ class Stor(Token):
 
 	def run(self, vm, left, right):
 		right.set(vm, left)
+		return left.get(vm)
 
 class Store(Stor): token = '->'
 

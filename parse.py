@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import tokens
+from errors import ParseError
 from expression import Expression
 
 LOOKUP = {}
@@ -22,18 +23,11 @@ for t in TOKENS:
 	if not t[0] in SYMBOLS and not t.isalpha():
 		SYMBOLS.append(t[0])
 
-class ParseError(Exception):
-       def __init__(self, msg):
-           self.msg = msg
-
-       def __str__(self):
-           return self.msg
-
-bracketmap = {'(':')', '{':'}', '[':']'}
+bracket_map = {'(':')', '{':'}', '[':']'}
 
 class Bracketed(Expression):
 	def __init__(self, end):
-		self.end = bracketmap[end]
+		self.end = bracket_map[end]
 		Expression.__init__(self)
 
 class Parser:
@@ -92,10 +86,7 @@ class Parser:
 		while self.more():
 			char = self.source[self.pos]
 			if char in ('\n', ':'):
-				# TODO: the Stor token needs to terminate bracket stacks too
-				# *and* needs to be special-cased in post()
-				while self.stack:
-					self.add(self.stack.pop())
+				self.close_brackets()
 
 				self.inc()
 				self.line += 1
@@ -134,6 +125,9 @@ class Parser:
 			# open paren outside a function pushes the stack into expression mode
 			# TODO: check for comma here, turn it into a tuple if we find one (used for Disp and functions)
 
+			if isinstance(result, tokens.Store):
+				self.close_brackets()
+
 			self.add(result)
 		
 		return [line for line in self.post()]
@@ -149,6 +143,10 @@ class Parser:
 			
 			self.lines[self.line].append(token)
 	
+	def close_brackets(self):
+		while self.stack:
+			self.add(self.stack.pop())
+
 	def symbol(self):
 		token = self.token(True)
 		if token:
