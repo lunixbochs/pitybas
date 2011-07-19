@@ -208,14 +208,14 @@ class Parser:
 	
 	def number(self, dot=True):
 		num = ''
-		negative = False
+		first = True
 		while self.more():
 			char = self.source[self.pos]
-			if char == '-' and not negative:
-				negative = True
+			if char == '-' and first: pass
 			elif not char.isdigit():
 				break
 
+			first = False
 			num += char
 			self.inc()
 		
