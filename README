@@ -1,1 +1,3 @@
-you can currently run "python tests/parser.py disp.bas" to run some very simple code
+You can run "python tests/parser.py [filename]" to execute BASIC code.
+
+Currently, all *.bas files in tests/ except circle.bas work.

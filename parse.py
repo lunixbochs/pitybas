@@ -57,7 +57,7 @@ class Parser:
 						if none and last_none:
 							# fill in implied multiplication
 							# negative numbers actually have implied addition
-							if isinstance(token, Value) and str(value).replace('-', '', 1).replace('.', '', 1).isdigit() and int(value) < 0:
+							if isinstance(token, tokens.Value) and str(value).replace('-', '', 1).replace('.', '', 1).isdigit() and int(value) < 0:
 								expr.append(tokens.Plus())
 							else:
 								expr.append(tokens.Mult())
@@ -141,7 +141,7 @@ class Parser:
 				
 				self.inc()
 				continue
-			elif '0' <= char <= '9' or isinstance(self.token(inc=False), tokens.Minus):
+			elif '0' <= char <= '9' or isinstance(self.token(sub=True, inc=False), tokens.Minus):
 				result = tokens.Value(self.number())
 			elif ('a' <= char <= 'z') or ('A' <= char <= 'Z'):
 				result = self.token()
