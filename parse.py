@@ -141,7 +141,7 @@ class Parser:
 				
 				self.inc()
 				continue
-			elif '0' <= char <= '9' or char == '-':
+			elif '0' <= char <= '9' or isinstance(self.token(inc=False), tokens.Minus):
 				result = tokens.Value(self.number())
 			elif ('a' <= char <= 'z') or ('A' <= char <= 'Z'):
 				result = self.token()
@@ -195,11 +195,12 @@ class Parser:
 				self.token()
 
 	
-	def token(self, sub=False):
+	def token(self, sub=False, inc=True):
 		remaining = self.source[self.pos:]
 		for token in TOKENS:
 			if remaining.startswith(token):
-				self.inc(len(token))
+				if inc:
+					self.inc(len(token))
 				return LOOKUP[token]()
 		else:
 			if not sub:
@@ -218,7 +219,7 @@ class Parser:
 			first = False
 			num += char
 			self.inc()
-		
+
 		if char == '.' and dot:
 			num += '.'
 			self.inc()
