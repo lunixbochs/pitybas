@@ -63,9 +63,15 @@ class Parent:
 	can_run = False
 	can_get = False
 	can_set = False
+	absorbs = ()
+	arg = None
 
 	# used for evaluation order inside expressions
 	priority = Pri.INVALID
+
+	def absorb(self, token):
+		self.arg = token
+		self.absorbs = ()
 
 	def __repr__(self):
 		return self.token
@@ -79,6 +85,12 @@ class Token(Parent):
 
 	def run(self, vm):
 		raise NotImplementedError
+	
+	def __repr__(self):
+		if self.arg:
+			return '%s %s' % (self.token, self.arg)
+		else:
+			return self.token
 
 class StubToken(Token, Stub):
 	def run(self, vm): pass
@@ -93,6 +105,8 @@ class Variable(Parent):
 class Function(Parent):
 	priority = Pri.NONE
 	tokens = {}
+
+	absorbs = (expression.Arguments,)
 
 	@classmethod
 	def add(cls, sub, name, attrs):
@@ -117,7 +131,10 @@ class Function(Parent):
 		self.args = args
 	
 	def __repr__(self):
-		return self.token + '('
+		if self.arg:
+			return '%s%s' % (self.token, repr(self.arg).replace('A', '', 1))
+		else:
+			return '%s()' % self.token
 
 class StubFunction(Function, Stub):
 	def call(self, vm): pass
@@ -199,22 +216,26 @@ class Stor(Token):
 class Store(Stor): token = '->'
 
 class Disp(Token):
+	absorbs = (expression.Expression, Variable)
+
 	def run(self, vm):
-		cur = vm.cur()
+		cur = self.arg
+		if not cur:
+			print
+			return
+
 		if isinstance(cur, expression.Tuple):
-			print ', '.join(str(x.get(vm)) for x in cur.contents)
+			print ', '.join(str(x) for x in cur.get(vm))
 		else:
 			print cur.get(vm)
-		
-		vm.inc()
 
 class Disp(Function):
 	def run(self, vm):
-		print ', '.join(str(x.get(vm)) for x in self.args.contents)
+		print ', '.join(str(x) for x in self.arg.get(vm))
 
 class Goto(Function):
 	def run(self, vm):
-		vm.goto(*self.args.get(vm))
+		vm.goto(*self.arg.get(vm))
 
 class Then(StubToken): pass
 class Else(StubToken): pass

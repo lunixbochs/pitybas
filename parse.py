@@ -71,6 +71,22 @@ class Parser:
 				if expr:
 					new.append(expr)
 				
+				if new:
+					last = new[0]
+					pops = []
+					for i in xrange(1, len(new)):
+						token = new[i]
+						for typ in last.absorbs:
+							if isinstance(token, typ):
+								last.absorb(token)
+								pops.append(i)
+						
+						last = token
+					
+					for p in reversed(sorted(pops)):
+						new.pop(p)
+
+
 				yield new
 	
 	def parse(self):
@@ -141,7 +157,7 @@ class Parser:
 			if isinstance(result, tokens.Function):
 				args = Arguments('(')
 				self.stack.append(args)
-				result.set_args(args)
+				result.absorb(args)
 
 		self.close_brackets()
 		return [line for line in self.post()]
