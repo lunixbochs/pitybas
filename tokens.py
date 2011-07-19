@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import string, math
 import expression
-from common import Pri
+from common import Pri, ExecutionError
 
 # helpers
 
@@ -139,6 +139,42 @@ class Function(Parent):
 class StubFunction(Function, Stub):
 	def call(self, vm): pass
 
+# variables
+
+class Const(Variable, Stub):
+	value = None
+
+	def set(self, vm, value): raise InvalidOperation
+	def get(self, vm): return self.value
+
+class Value(Const):
+	def __init__(self, value):
+		self.value = value
+		Variable.__init__(self)
+
+	def get(self, vm): return self.value
+
+	def __repr__(self):
+		return repr(self.value)
+
+class Ans(Const):
+	def get(self, vm): return vm.get_var('Ans')
+
+class Pi(Const):
+	token = u'π'
+	value = math.pi
+
+class e(Const):
+	token = 'e'
+	value = math.e
+
+class SimpleVar(Variable, Stub):
+	def set(self, vm, value): return vm.set_var(self.token, value)
+	def get(self, vm): return vm.get_var(self.token)
+
+for c in string.uppercase:
+	add_class(c, SimpleVar)
+
 # token definitions
 
 class EOF(Token, Stub):
@@ -232,6 +268,42 @@ class Disp(Token):
 class Disp(Function):
 	def run(self, vm):
 		print ', '.join(str(x) for x in self.arg.get(vm))
+
+class Lbl(StubToken):
+	absorbs = (expression.Expression, Value)
+
+	@staticmethod
+	def guess_label(arg, vm):
+		label = None
+		if isinstance(arg, expression.Expression):
+			arg = arg.flatten()
+
+		if isinstance(arg, Value):
+			label = arg.get(vm)
+		elif isinstance(arg, Variable):
+			label = arg.token
+		elif isinstance(arg, expression.Expression):
+			label = arg.get(vm)
+		
+		return label
+	
+	def get_label(self, vm):
+		return Lbl.guess_label(self.label, vm)
+
+	def absorb(self, arg):
+		self.label = arg
+
+class Goto(Token):
+	absorbs = (expression.Expression, Value)
+	def run(self, vm):
+		label = Lbl.guess_label(self.arg, vm)
+		
+		if label:
+			for row, col, token in vm.find(Lbl):
+				if token.get_label(vm) == label:
+					vm.goto(row, col)
+		else:
+			raise ExecutionError('could not find a label to Goto: %s' % self.arg)
 
 class Goto(Function):
 	def run(self, vm):
@@ -338,39 +410,3 @@ class GreaterOrEquals(Logic):
 
 class GreaterOrEqualsToken(GreaterOrEquals):
 	token = u'≥'
-
-# variables
-
-class Const(Variable, Stub):
-	value = None
-
-	def set(self, vm, value): raise InvalidOperation
-	def get(self, vm): return self.value
-
-class Value(Const):
-	def __init__(self, value):
-		self.value = value
-		Variable.__init__(self)
-
-	def get(self, vm): return self.value
-
-	def __repr__(self):
-		return repr(self.value)
-
-class Ans(Const):
-	def get(self, vm): return vm.get_var('Ans')
-
-class Pi(Const):
-	token = u'π'
-	value = math.pi
-
-class e(Const):
-	token = 'e'
-	value = math.e
-
-class SimpleVar(Variable, Stub):
-	def set(self, vm, value): return vm.set_var(self.token, value)
-	def get(self, vm): return vm.get_var(self.token)
-
-for c in string.uppercase:
-	add_class(c, SimpleVar)

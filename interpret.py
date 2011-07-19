@@ -55,20 +55,22 @@ class Interpreter:
 		else:
 			wrap = False
 		
-		def y(line):
+		def y(i):
 			line = self.code[i]
 			if line:
 				for t in types:
 					cur = line[0]
 					if isinstance(cur, t):
-						yield i, 0, cur
+						return i, 0, cur
 
 		for i in xrange(self.line, len(self.code)):
-			y(i)
+			ret = y(i)
+			if ret: yield ret
 		
 		if wrap:
 			for i in xrange(0, self.line):
-				y(i)
+				ret = y(i)
+				if ret: yield ret
 	
 	def goto(self, row, col):
 		if row >= 0 and row < len(self.code)\
