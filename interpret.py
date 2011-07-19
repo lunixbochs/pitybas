@@ -48,6 +48,35 @@ class Interpreter:
 
 		self.vars[var] = value
 		return value
+	
+	def find(self, *types, **kwargs):
+		if 'wrap' in kwargs:
+			wrap = kwargs['wrap']
+		else:
+			wrap = False
+		
+		def y(line):
+			line = self.code[i]
+			if line:
+				for t in types:
+					cur = line[0]
+					if isinstance(cur, t):
+						yield i, 0, cur
+
+		for i in xrange(self.line, len(self.code)):
+			y(i)
+		
+		if wrap:
+			for i in xrange(0, self.line):
+				y(i)
+	
+	def goto(self, row, col):
+		if row >= 0 and row < len(self.code)\
+			and col >= 0 and col < len(self.code[row]):
+				self.line = row
+				self.col = col
+		else:
+			raise ExecutionError('cannot goto (%i, %i)' % (row, col))
 
 	def run(self):
 		while not isinstance(self.cur(), EOF):

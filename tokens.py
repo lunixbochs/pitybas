@@ -105,6 +105,9 @@ class Function(Parent):
 
 	def __init__(self):
 		self.args = ()
+		if self.run:
+			self.priority = Pri.INVALID
+
 		Parent.__init__(self)
 
 	def get(self, vm):
@@ -206,8 +209,12 @@ class Disp(Token):
 		vm.inc()
 
 class Disp(Function):
-	def get(self, vm):
+	def run(self, vm):
 		print ', '.join(str(x.get(vm)) for x in self.args.contents)
+
+class Goto(Function):
+	def run(self, vm):
+		vm.goto(*self.args.get(vm))
 
 class Then(StubToken): pass
 class Else(StubToken): pass

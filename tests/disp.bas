@@ -31,3 +31,8 @@ Disp 1, 2, 3, "four!"
 
 Disp "function test"
 Disp(1, 2
+
+Disp "goto test
+Goto(27, 0
+Disp "will be skipped"
+Disp "this should disp"
