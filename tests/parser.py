@@ -19,4 +19,4 @@ print
 print 'Running...'
 print
 
-vm.run()
+vm.execute()

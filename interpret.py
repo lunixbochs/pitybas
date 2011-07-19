@@ -20,6 +20,7 @@ class Interpreter:
 		self.col = 0
 		self.expression = None
 		self.blocks = []
+		self.running = []
 
 		self.vars = {}
 	
@@ -48,6 +49,21 @@ class Interpreter:
 
 		self.vars[var] = value
 		return value
+
+	def push_block(self, block=None):
+		if not block and self.running:
+			block = self.running[-1]
+
+		if block:
+			self.blocks.append(block)
+		else:
+			raise ExecutionError('tried to push an invalid block to the stack')
+
+	def pop_block(self):
+		if self.blocks:
+			return self.blocks.pop()
+		else:
+			raise ExecutionError('tried to pop an empty block stack')
 	
 	def find(self, *types, **kwargs):
 		if 'wrap' in kwargs:
@@ -80,14 +96,21 @@ class Interpreter:
 		else:
 			raise ExecutionError('cannot goto (%i, %i)' % (row, col))
 
-	def run(self):
+	def run(self, cur):
+		if cur.can_run:
+			self.running.append((self.line, self.col, cur))
+			self.inc()
+			cur.run(self)
+			self.running.pop()
+		elif cur.can_get:
+			self.inc()
+			self.set_var('Ans', cur.get(self))
+		else:
+			raise ExecutionError('cannot seem to run token: %s' % cur)
+
+
+	def execute(self):
 		while not isinstance(self.cur(), EOF):
 			cur = self.cur()
-			if cur.can_run:
-				self.inc()
-				cur.run(self)
-			elif cur.can_get:
-				self.inc()
-				self.set_var('Ans', cur.get(self))
-			else:
-				print 'cannot seem to run:', cur
+			self.run(cur)
+

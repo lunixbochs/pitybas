@@ -56,7 +56,11 @@ class Parser:
 						expr = expr or Expression()
 						if none and last_none:
 							# fill in implied multiplication
-							expr.append(tokens.Mult())
+							# negative numbers actually have implied addition
+							if isinstance(token, Value) and str(value).replace('-', '', 1).replace('.', '', 1).isdigit() and int(value) < 0:
+								expr.append(tokens.Plus())
+							else:
+								expr.append(tokens.Mult())
 
 						expr.append(token)
 					else:
@@ -137,12 +141,12 @@ class Parser:
 				
 				self.inc()
 				continue
-			elif char in SYMBOLS:
-				result = self.symbol()
-			elif '0' <= char <= '9':
+			elif '0' <= char <= '9' or char == '-':
 				result = tokens.Value(self.number())
 			elif ('a' <= char <= 'z') or ('A' <= char <= 'Z'):
 				result = self.token()
+			elif char in SYMBOLS:
+				result = self.symbol()
 			elif char == '"':
 				result = tokens.Value(self.string())
 			else:
@@ -204,9 +208,12 @@ class Parser:
 	
 	def number(self, dot=True):
 		num = ''
+		negative = False
 		while self.more():
 			char = self.source[self.pos]
-			if not char.isdigit():
+			if char == '-' and not negative:
+				negative = True
+			elif not char.isdigit():
 				break
 
 			num += char

@@ -189,57 +189,136 @@ class Const(Variable, Stub):
 	def get(self, vm):
 		return self.value
 
-class If(Token):
+class Block(StubToken):
+	absorbs = (expression.Expression, Value)
+
+class If(Block):
 	def run(self, vm):
-		@vm.block
-		def run(b):
-			if b.true():
-				b.run()
+		if self.arg == None:
+			raise ExecutionError('If statement without condition')
+
+		true = bool(self.arg.get(vm))
+		tokens = vm.find(Else, End, wrap=False)
+
+		els, end = None, None
+		for row, col, token in tokens:
+			if not els and isinstance(token, Else):
+				els = row, col, token
+			elif isinstance(token, End):
+				end = row, col, token
+				break
+
+		cur = vm.cur()
+		if isinstance(cur, Then):
+			if true:
+				vm.push_block()
+				vm.inc()
+			elif els:
+				vm.push_block()
+				row, col, _ = els
+				vm.goto(row, col)
+				vm.inc()
+			elif end:
+				row, col, _ = end
+				vm.goto(row, col)
+				vm.inc()
 			else:
-				b.skip()
-
-class While(Token):
-	def run(self, vm):
-		@vm.block
-		def run(b):
-			if b.true():
-				while b.true():
-					b.run()
-			else:
-				b.skip()
-
-'''
-class block:
-	def __call__(block, self, vm):
-		def wrapper(self, vm):
-			# get expression
-			# get block
-
-			func(self, block)
-		
-		return wrapper
-
-class While(Token):
-	@block
-	def run(self, block):
-		if block.true():
-			while block.true():
-				block.run()
+				raise ExecutionError('If/Then could not find End on negative expression')
+		elif true:
+			vm.run(cur)
 		else:
-			block.skip()
-'''
+			vm.inc_row()
 
-# from vm import block, expr?
+	def resume(self, vm, row, col): pass
 
-class Repeat(Token):
+class Then(Token):
 	def run(self, vm):
-		@vm.block
-		def run(b):
-			if b.false():
-				while b.false():
-					b.run()
+		raise ExecutionError('cannot execute a standalone Then statement')
+
+class Else(Token):
+	def run(self, vm):
+		row, col, block = vm.pop_block()
+		ends = vm.find(End, wrap=False)
+		for e in ends:
+			row, col, end = e
+			break
+		else:
+			raise ExecutionError('Else could not find End')
+
+		vm.goto(row, col)
+		vm.inc()
+
+class Loop(Block, Stub):
+	def run(self, vm):
+		if self.arg == None:
+			raise ExecutionError('%s statement without condition' % self.token)
+
+		row, col, _ = vm.running[-1]
+		self.resume(vm, row, col)
+
+	def loop(self, vm):
+		return True
+
+	def resume(self, vm, row, col):
+		vm.goto(row, col)
+		if self.loop(vm):
+			vm.push_block((row, col, self))
+			vm.inc()
+		else:
+			tokens = vm.find(End, wrap=False)
+			for row, col, token in tokens:
+				if isinstance(token, End):
+					end = row, col, token
+					break
 			else:
-				b.skip()
+				raise ExecutionError('%s could not find End' % self.token)
+
+			vm.goto(row, col)
+			vm.inc()
+
+class While(Loop):
+	def loop(self, vm):
+		return bool(self.arg.get(vm))
+
+class Repeat(Loop):
+	def loop(self, vm):
+		return not bool(self.arg.get(vm))
+
+class For(Loop, Function):
+	pos = None
+
+	def loop(self, vm):
+		if len(self.arg) in (3, 4):
+			var = self.arg.contents[0]
+			args = [arg.get(vm) for arg in self.arg.contents[1:]]
+
+			forward = True
+			if len(args) == 3:
+				inc = args[2]
+				args = args[:2]
+				forward = False
+			else:
+				inc = 1
+			
+			start, end = args
+			
+			if self.pos is None:
+				self.pos = start
+			else:
+				self.pos += inc
+
+			var.set(vm, self.pos)
+			if forward and self.pos > end or not forward and self.pos < end:
+				return False
+			else:
+				return True
+		else:
+			raise ExecutionError('incorrect arguments to For loop')
+
+class End(Token):
+	def run(self, vm):
+		row, col, block = vm.pop_block()
+		block.resume(vm, row, col)
 
 class Stor(Token):
 	token = u'→'
@@ -308,13 +387,6 @@ class Goto(Token):
 class Goto(Function):
 	def run(self, vm):
 		vm.goto(*self.arg.get(vm))
-
-class Then(StubToken): pass
-class Else(StubToken): pass
-
-class End(Token):
-	def run(self, vm):
-		vm.end_block()
 
 # operators
 
