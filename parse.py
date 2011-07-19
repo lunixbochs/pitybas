@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import tokens
 from errors import ParseError
-from expression import Expression
+from expression import Expression, Bracketed, Arguments, Tuple
 
 LOOKUP = {}
 LOOKUP.update(tokens.Token.tokens)
@@ -22,13 +22,6 @@ TOKENS.reverse()
 for t in TOKENS:
 	if not t[0] in SYMBOLS and not t.isalpha():
 		SYMBOLS.append(t[0])
-
-bracket_map = {'(':')', '{':'}', '[':']'}
-
-class Bracketed(Expression):
-	def __init__(self, end):
-		self.end = bracket_map[end]
-		Expression.__init__(self)
 
 class Parser:
 	def __init__(self, source):
@@ -85,6 +78,7 @@ class Parser:
 	def parse(self):
 		while self.more():
 			char = self.source[self.pos]
+
 			if char in ('\n', ':'):
 				self.close_brackets()
 
@@ -104,11 +98,31 @@ class Parser:
 
 					if stack.end == char:
 						result = self.stack.pop()
+						result.finish()
 						self.inc()
 					else:
 						self.error('tried to end \'%s\' with: "%s" (expecting "%s")' % (stack, char, stack.end))
 				else:
 					self.error('encountered "%s" but we have no expression on the stack to terminate' % char)
+			elif char == ',':
+				line = self.lines[-1]
+				if len(self.stack) > 1 and isinstance(self.stack[-2], Tuple):
+					expr = self.stack.pop()
+					self.stack[-1].append(expr)
+				elif self.stack and isinstance(self.stack[-1], Tuple):
+					pass
+				else:
+					if self.lines[-1]:
+						token = self.lines[-1].pop()
+					else:
+						self.error('Encountered comma, but cannot find anything to put in the tuple')
+
+					tup = Tuple()
+					tup.append(token)
+					self.stack.append(tup)
+				
+				self.inc()
+				continue
 			elif char in SYMBOLS:
 				result = self.symbol()
 			elif '0' <= char <= '9':
@@ -120,27 +134,27 @@ class Parser:
 			else:
 				self.error('could not tokenize: %s' % repr(char))
 			
-			# TODO: handle parens, use the stack for them
 			# functions push the stack into argument mode
-			# open paren outside a function pushes the stack into expression mode
-			# TODO: check for comma here, turn it into a tuple if we find one (used for Disp and functions)
+			if isinstance(result, tokens.Function):
+				self.stack.append(Arguments('('))
 
 			if isinstance(result, tokens.Store):
 				self.close_brackets()
 
 			self.add(result)
-		
+
+		self.close_brackets()
 		return [line for line in self.post()]
 	
 	def add(self, token):
-		# TODO: if it's a function, push an Arguments instance to the stack
+		# TODO: cannot add Pri.INVALID unless there's no expr on the stack
 		if self.stack:
 			stack = self.stack[-1]
 			stack.append(token)
 		else:
 			while self.line >= len(self.lines):
 				self.lines.append([])
-			
+
 			self.lines[self.line].append(token)
 	
 	def close_brackets(self):
@@ -207,7 +221,7 @@ class Parser:
 				self.inc()
 				break
 
-			elif char in ('\n', ':'):
+			elif char == '\n':
 				break
 			
 			ret += char

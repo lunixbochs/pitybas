@@ -1,6 +1,6 @@
 from parse import Parser
 from tokens import EOF, Value
-from errors import ExecutionError
+from common import ExecutionError
 
 class Interpreter:
 	@classmethod
@@ -59,4 +59,4 @@ class Interpreter:
 				self.inc()
 				self.set_var('Ans', cur.get(self))
 			else:
-				print cur.run
+				print 'cannot seem to run:', cur

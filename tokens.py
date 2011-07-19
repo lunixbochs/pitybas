@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 import string, math
+import expression
+from common import Pri
 
 # helpers
 
@@ -20,8 +22,28 @@ class Tracker(type):
 	def __new__(self, name, bases, attrs):
 		if not 'token' in attrs:
 			attrs['token'] = name
+		
+		attrs.update({
+			'can_run': False,
+			'can_get': False,
+			'can_set': False,
+			'can_call': False
+		})
 
 		cls = type.__new__(self, name, bases, attrs)
+
+		if 'run' in dir(cls):
+			cls.can_run = True
+		
+		if 'get' in dir(cls):
+			cls.can_get = True
+		
+		if 'set' in dir(cls):
+			cls.can_set = True
+		
+		if 'call' in dir(cls):
+			cls.can_call = True
+		
 		return cls
 
 	def __init__(cls, name, bases, attrs):
@@ -30,30 +52,6 @@ class Tracker(type):
 
 class InvalidOperation(Exception):
 	pass
-
-class Pri:
-	# evaluation happens in the following order:
-	# skip: expressions, functions, variables
-	# 1. exponents, factorials
-	# 2. multiplication, division
-	# 3. addition, subtraction
-	# 4. logic operators
-	# 5. boolean operators
-	# 6. variable setting
-
-	# these won't be parsed into expressions at all
-	INVALID = -2
-	# NONE means store but don't execute directly
-	# used for variables, lazy loading functions and expressions
-	NONE = -1
-
-	EXPONENT = 0
-	MULTDIV = 1
-	ADDSUB = 2
-
-	LOGIC = 3
-	BOOL = 4
-	SET = 5
 
 class Parent:
 	__metaclass__ = Tracker
@@ -73,24 +71,6 @@ class Parent:
 
 	# used for evaluation order inside expressions
 	priority = Pri.INVALID
-
-	def __init__(self):
-		if self.run != Parent.run:
-			self.can_run = True
-
-		if self.get != Parent.get:
-			self.can_get = True
-		
-		if self.set != Parent.set:
-			self.can_set = True
-		
-		if self.call != Parent.call:
-			self.can_call = True
-	
-	def run(self, vm): raise InvalidOperation
-	def get(self, vm): raise InvalidOperation
-	def set(self, vm, value): raise InvalidOperation
-	def call(self, vm): raise InvalidOperation
 
 	def __repr__(self):
 		return self.token
@@ -207,8 +187,8 @@ class Store(Stor): token = '->'
 class Disp(Token):
 	def run(self, vm):
 		cur = vm.cur()
-		if isinstance(cur, tuple):
-			print '\n'.join(str(x.get(vm)) for x in cur)
+		if isinstance(cur, expression.Tuple):
+			print ', '.join(str(x.get(vm)) for x in cur.contents)
 		else:
 			print cur.get(vm)
 		
