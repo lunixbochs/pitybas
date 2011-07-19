@@ -12,8 +12,6 @@ SYMBOLS = []
 TOKENS = tokens.Token.tokens.keys()
 VARIABLES = tokens.Variable.tokens.keys()
 FUNCTIONS = tokens.Function.tokens.keys()
-
-FUNCTIONS = [func+'(' for func in FUNCTIONS]
 TOKENS += VARIABLES + FUNCTIONS
 
 TOKENS.sort()
@@ -133,15 +131,17 @@ class Parser:
 				result = tokens.Value(self.string())
 			else:
 				self.error('could not tokenize: %s' % repr(char))
-			
-			# functions push the stack into argument mode
-			if isinstance(result, tokens.Function):
-				self.stack.append(Arguments('('))
 
 			if isinstance(result, tokens.Store):
 				self.close_brackets()
 
 			self.add(result)
+
+			# functions push the stack into argument mode
+			if isinstance(result, tokens.Function):
+				args = Arguments('(')
+				self.stack.append(args)
+				result.set_args(args)
 
 		self.close_brackets()
 		return [line for line in self.post()]
@@ -151,7 +151,7 @@ class Parser:
 		if self.stack:
 			stack = self.stack[-1]
 			stack.append(token)
-		else:
+		elif not isinstance(token, Arguments):
 			while self.line >= len(self.lines):
 				self.lines.append([])
 

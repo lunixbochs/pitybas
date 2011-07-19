@@ -27,7 +27,6 @@ class Tracker(type):
 			'can_run': False,
 			'can_get': False,
 			'can_set': False,
-			'can_call': False
 		})
 
 		cls = type.__new__(self, name, bases, attrs)
@@ -40,9 +39,6 @@ class Tracker(type):
 		
 		if 'set' in dir(cls):
 			cls.can_set = True
-		
-		if 'call' in dir(cls):
-			cls.can_call = True
 		
 		return cls
 
@@ -67,7 +63,6 @@ class Parent:
 	can_run = False
 	can_get = False
 	can_set = False
-	can_call = False
 
 	# used for evaluation order inside expressions
 	priority = Pri.INVALID
@@ -99,11 +94,27 @@ class Function(Parent):
 	priority = Pri.NONE
 	tokens = {}
 
-	def get(self, vm):
-		return self.call(vm)
+	@classmethod
+	def add(cls, sub, name, attrs):
+		if 'token' in attrs:
+			name = attrs['token']
+		
+		if name:
+			name += '('
+			cls.tokens[name] = sub
 
-	def call(self, vm):
+	def __init__(self):
+		self.args = ()
+		Parent.__init__(self)
+
+	def get(self, vm):
 		raise NotImplementedError
+	
+	def set_args(self, args):
+		self.args = args
+	
+	def __repr__(self):
+		return self.token + '('
 
 class StubFunction(Function, Stub):
 	def call(self, vm): pass
@@ -194,6 +205,10 @@ class Disp(Token):
 		
 		vm.inc()
 
+class Disp(Function):
+	def get(self, vm):
+		print ', '.join(str(x.get(vm)) for x in self.args.contents)
+
 class Then(StubToken): pass
 class Else(StubToken): pass
 
@@ -265,12 +280,6 @@ class xor(Bool):
 		return left ^ right
 
 # logic
-
-
-['+', '-', '*', '/', u'‾', '^', u'√',
-'=', u'≠', '>', u'≥', '<', u'≤',
-u'→', '!', u'π', '%', 'r', u'°',
-',', '(', ')', '[', ']', '{', '}',]
 
 class LessThan(Logic):
 	token = '<'

@@ -26,5 +26,8 @@ Disp "->D->E"
 1->D->E
 Disp D + E
 
-Disp "Comma Disp test"
+Disp "comma Disp test"
 Disp 1, 2, 3, "four!"
+
+Disp "function test"
+Disp(1, 2
