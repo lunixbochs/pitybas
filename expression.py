@@ -1,7 +1,7 @@
 import tokens
 from common import ExecutionError, ExpressionError, Pri
 
-class Expression:
+class Base:
 	priority = Pri.NONE
 
 	can_run = False
@@ -111,17 +111,19 @@ class Expression:
 
 bracket_map = {'(':')', '{':'}', '[':']'}
 
-class Bracketed(Expression):
+class Expression(Base): pass
+
+class Bracketed(Base):
 	def __init__(self, end):
 		self.end = bracket_map[end]
-		Expression.__init__(self)
+		Base.__init__(self)
 
-class Tuple(Expression):
+class Tuple(Base):
 	priority = Pri.INVALID
 
 	def __init__(self):
 		self.contents = []
-		Expression.__init__(self)
+		Base.__init__(self)
 	
 	def append(self, expr):
 		self.contents.append(expr)

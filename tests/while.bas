@@ -1,5 +1,5 @@
 1->A
-While 1
+While A<10
 Disp A
 A+1->A
 End

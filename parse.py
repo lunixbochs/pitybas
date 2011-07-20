@@ -76,6 +76,19 @@ class Parser:
 					new.append(expr)
 				
 				if new:
+					# implied expressions need to be added to tuples in their entirety, instead of just their last element
+					pops = []
+					for i in xrange(0, len(new)-1):
+						e, t = new[i], new[i+1]
+						if isinstance(e, Expression) and isinstance(t, Tuple):
+							pops.append(i)
+							e.append(t.contents[0])
+							t.contents[0] = e
+
+					for p in reversed(sorted(pops)):
+						new.pop(p)
+
+					# tokens with the absorb mechanic can steal the next token from the line if it matches a list of types
 					last = new[0]
 					pops = []
 					for i in xrange(1, len(new)):
@@ -84,15 +97,15 @@ class Parser:
 							if isinstance(token, typ):
 								last.absorb(token)
 								pops.append(i)
+								break
 						
 						last = token
 					
 					for p in reversed(sorted(pops)):
 						new.pop(p)
 
-
 				yield new
-	
+
 	def parse(self):
 		while self.more():
 			char = self.source[self.pos]
