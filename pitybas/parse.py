@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import tokens
-from errors import ParseError
+from common import ParseError
 from expression import Expression, Bracketed, Arguments, Tuple
 
 LOOKUP = {}

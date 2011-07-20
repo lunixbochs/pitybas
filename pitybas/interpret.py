@@ -113,4 +113,3 @@ class Interpreter:
 		while not isinstance(self.cur(), EOF):
 			cur = self.cur()
 			self.run(cur)
-
