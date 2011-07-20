@@ -303,14 +303,14 @@ class nPr(Operator):
 	# TODO: nPr and nCr should support lists
 	priority = Pri.PROB
 
-	def run(self, left, right):
+	def op(self, left, right):
 		return math.factorial(left) / math.factorial((left - right))
 
 
 class nCr(Operator):
 	priority = Pri.PROB
 
-	def run(self, left, right):
+	def op(self, left, right):
 		return math.fact(left) / (math.fact(right) * math.fact((left - right)))
 
 # random numbers
