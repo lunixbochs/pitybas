@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-import string, math
+import string, math, random
+
 from common import Pri, ExecutionError
 from expression import Tuple, Expression, Arguments
 
@@ -213,16 +214,23 @@ class Operator(Token, Stub):
 	def run(self, vm, left, right):
 		return self.op(left, right)
 
-class AddSub(Operator): priority = Pri.ADDSUB
-class MultDiv(Operator): priority = Pri.MULTDIV
-class Exponent(Operator): priority = Pri.EXPONENT
-class Bool(Operator):
+class AddSub(Operator, Stub): priority = Pri.ADDSUB
+class MultDiv(Operator, Stub): priority = Pri.MULTDIV
+class Exponent(Operator, Stub): priority = Pri.EXPONENT
+class Bool(Operator, Stub):
 	priority = Pri.BOOL
 
 	@get
 	def run(self, vm, left, right):
 		if self.bool(left, right): return 1
 		return 0
+
+class MathFunction(Function, Stub):
+	def get(self, vm):
+		args = self.arg.get(vm)
+		return self.call(vm, args)
+	
+	def call(self, vm, arg): raise NotImplementedError
 
 class Logic(Bool): priority = Pri.LOGIC
 
@@ -267,6 +275,85 @@ class Sqrt(Function):
 			expr.append(arg)
 
 		return math.sqrt(expr.get(vm))
+
+class sqrt(Sqrt): pass
+
+class Abs(MathFunction):
+	token = 'abs'
+
+	def call(self, vm, args):
+		assert len(args) == 1
+		return abs(args[0])
+
+class Min(MathFunction):
+	token = 'min'
+
+	def call(self, vm, args):
+		assert len(args) == 2
+		return min(*args)
+
+class Max(MathFunction):
+	token = 'max'
+
+	def call(self, vm, args):
+		assert len(args) == 2
+		return max(*args)
+
+class nPr(Operator):
+	# TODO: nPr and nCr should support lists
+	priority = Pri.PROB
+
+	def run(self, left, right):
+		return math.factorial(left) / math.factorial((left - right))
+
+
+class nCr(Operator):
+	priority = Pri.PROB
+
+	def run(self, left, right):
+		return math.fact(left) / (math.fact(right) * math.fact((left - right)))
+
+# random numbers
+
+class rand(Variable):
+	def get(self, vm):
+		return random.random()
+	
+	def set(self, vm, value):
+		random.seed(value)
+
+class rand(MathFunction):
+	def call(self, vm, args):
+		assert len(args) == 1
+		return [random.random() for i in xrange(args[0])]
+
+class randInt(MathFunction):
+	def call(self, vm, args):
+		assert len(args) in (2, 3)
+
+		if len(args) == 2:
+			args.append(1)
+		
+		return random.randint(*args)
+
+class randNorm(MathFunction):
+	def call(self, vm, args):
+		assert len(args) in (2, 3)
+
+		if len(args) == 3:
+			args, n = args[:2], args[2]
+		else:
+			n = 1
+		
+		return [random.normalvariate(*args) for i in xrange(n)]
+
+class randBin(MathFunction):
+	def call(self, vm, args):
+		raise NotImplementedError # numpy.random has a binomial distribution, or I could write my own...
+
+class randM(MathFunction):
+	def call(self, vm, args):
+		raise NotImplementedError # I don't know how I'm going to do lists and matricies yet
 
 # boolean
 

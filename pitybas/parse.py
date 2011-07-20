@@ -130,14 +130,22 @@ class Parser:
 				continue
 			elif char in ')]}':
 				if self.stack:
-					stack = self.stack[-1]
-
-					if stack.end == char:
-						result = self.stack.pop()
-						result.finish()
-						self.inc()
-					else:
-						self.error('tried to end \'%s\' with: "%s" (expecting "%s")' % (stack, char, stack.end))
+					stacks = []
+					l = len(self.stack)
+					for i in xrange(l):
+						stack = self.stack.pop(l-i-1)
+						if isinstance(stack, Bracketed):
+							if stack.end == char:
+								for s in stacks:
+									stack.append(s)
+									
+								result = stack
+								stack.finish()
+								self.inc()
+							else:
+								self.error('tried to end \'%s\' with: "%s" (expecting "%s")' % (stack, char, stack.end))
+						else:
+							stacks.append(stack)
 				else:
 					self.error('encountered "%s" but we have no expression on the stack to terminate' % char)
 			elif char == ',':
@@ -157,6 +165,9 @@ class Parser:
 					tup.append(token)
 					self.stack.append(tup)
 				
+				if isinstance(self.stack[-1], Arguments):
+					self.stack.append(Expression())
+
 				self.inc()
 				continue
 			elif '0' <= char <= '9'	or isinstance(self.token(sub=True, inc=False), tokens.Minus) and self.number(test=True):
@@ -179,6 +190,7 @@ class Parser:
 			if isinstance(result, tokens.Function):
 				args = Arguments('(')
 				self.stack.append(args)
+				self.stack.append(Expression())
 				result.absorb(args)
 
 		self.close_brackets()

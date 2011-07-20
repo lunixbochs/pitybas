@@ -25,10 +25,11 @@ class Pri:
 	# used for variables, lazy loading functions and expressions
 	NONE = -1
 
-	EXPONENT = 0
-	MULTDIV = 1
-	ADDSUB = 2
+	PROB = 0
+	EXPONENT = 1
+	MULTDIV = 2
+	ADDSUB = 3
 
-	LOGIC = 3
-	BOOL = 4
-	SET = 5
+	LOGIC = 4
+	BOOL = 5
+	SET = 6
