@@ -21,6 +21,9 @@ for t in TOKENS:
 	if not t[0] in SYMBOLS and not t.isalpha():
 		SYMBOLS.append(t[0])
 
+def test_number(num):
+	return str(num).lstrip('-').replace('.', '', 1).isdigit()
+
 class Parser:
 	def __init__(self, source):
 		self.source = unicode(source)
@@ -40,8 +43,9 @@ class Parser:
 	def inc(self, n=1):
 		self.pos += n
 	
-	def more(self):
-		return self.pos < self.length
+	def more(self, pos=None):
+		if pos is None: pos = self.pos
+		return pos < self.length
 	
 	def post(self):
 		for line in self.lines:
@@ -57,8 +61,9 @@ class Parser:
 						if none and last_none:
 							# fill in implied multiplication
 							# negative numbers actually have implied addition
-							if isinstance(token, tokens.Value) and str(value).replace('-', '', 1).replace('.', '', 1).isdigit() and int(value) < 0:
-								expr.append(tokens.Plus())
+							if isinstance(token, tokens.Value)\
+								and test_number(token.value) and int(token.value) < 0:
+									expr.append(tokens.Plus())
 							else:
 								expr.append(tokens.Mult())
 
@@ -154,7 +159,7 @@ class Parser:
 				
 				self.inc()
 				continue
-			elif '0' <= char <= '9' or isinstance(self.token(sub=True, inc=False), tokens.Minus):
+			elif '0' <= char <= '9'	or isinstance(self.token(sub=True, inc=False), tokens.Minus) and self.number(test=True):
 				result = tokens.Value(self.number())
 			elif ('a' <= char <= 'z') or ('A' <= char <= 'Z'):
 				result = self.token()
@@ -220,33 +225,40 @@ class Parser:
 				near = remaining[:8].split('\n',1)[0]
 				self.error('no token found at pos %i near "%s"' % (self.pos, near))
 	
-	def number(self, dot=True):
+	def number(self, dot=True, test=False, inc=True):
 		num = ''
 		first = True
-		while self.more():
-			char = self.source[self.pos]
+		pos = self.pos
+		while self.more(pos):
+			char = self.source[pos]
 			if char == '-' and first: pass
 			elif not char.isdigit():
 				break
 
 			first = False
 			num += char
-			self.inc()
+			pos += 1
 
 		if char == '.' and dot:
 			num += '.'
-			self.inc()
+			pos += 1
 
-			num += self.number(False)
-			
-			if num[-1] == '.' or num[0] == '.':
-				pass # TODO: verify behavior of 1. and .1 on device
+			self.pos, tmp = pos, self.pos
+			num += str(self.number(dot=False))
+			self.pos = tmp
 
-		f, i = float(num), int(num)
-		if f != i:
-			return f
+		if inc and not test: self.pos = pos
+
+		if test_number(num):
+			if test: return True
+			f, i = float(num), int(num)
+			if f != i:
+				return f
+			else:
+				return i
 		else:
-			return i
+			if test: return False
+			raise ParseError('invalid number ending at pos %i: %s' % (self.pos, num))
 	
 	def string(self):
 		ret = ''
