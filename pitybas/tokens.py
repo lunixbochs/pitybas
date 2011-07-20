@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import string, math
-import expression
 from common import Pri, ExecutionError
 from expression import Tuple, Expression, Arguments
 
@@ -126,7 +125,7 @@ class Function(Parent):
 
 	def __init__(self):
 		self.args = ()
-		if self.run:
+		if self.can_run:
 			self.priority = Pri.INVALID
 
 		Parent.__init__(self)
@@ -139,9 +138,9 @@ class Function(Parent):
 	
 	def __repr__(self):
 		if self.arg:
-			return '%s%s' % (self.token, repr(self.arg).replace('A', '', 1))
+			return '%s%s' % (repr(self.token), repr(self.arg).replace('A', '', 1))
 		else:
-			return '%s()' % self.token
+			return '%s()' % repr(self.token)
 
 class StubFunction(Function, Stub):
 	def call(self, vm): pass
@@ -204,7 +203,7 @@ class Stor(Token):
 	priority = Pri.SET
 
 	def run(self, vm, left, right):
-		right.set(vm, left)
+		right.set(vm, left.get(vm))
 		return left.get(vm)
 
 class Store(Stor): token = '->'
@@ -216,6 +215,7 @@ class Operator(Token, Stub):
 
 class AddSub(Operator): priority = Pri.ADDSUB
 class MultDiv(Operator): priority = Pri.MULTDIV
+class Exponent(Operator): priority = Pri.EXPONENT
 class Bool(Operator):
 	priority = Pri.BOOL
 
@@ -251,6 +251,22 @@ class Div(MultDiv):
 
 	def op(self, left, right):
 		return left / right
+
+class Pow(Exponent):
+	token = '^'
+
+	def op(self, left, right):
+		return left ** right
+
+class Sqrt(Function):
+	token = u'√'
+
+	def get(self, vm):
+		expr = Expression()
+		for arg in self.arg.contents:
+			expr.append(arg)
+
+		return math.sqrt(expr.get(vm))
 
 # boolean
 
@@ -501,7 +517,7 @@ class Prompt(Token):
 
 		if isinstance(self.arg, Tuple):
 			for var in self.arg.contents:
-				self.prompt(var)
+				self.prompt(vm, var)
 		else:
 			self.prompt(vm, self.arg)
 
@@ -509,7 +525,7 @@ class Prompt(Token):
 		var.set(vm, input('%s? ' % var.token))
 
 	def __repr__(self):
-		return 'Prompt(%s)' % self.arg
+		return 'Prompt(%s)' % repr(self.arg)
 
 class Input(Token):
 	absorbs = (Expression, Variable, Tuple)
@@ -528,4 +544,3 @@ class Input(Token):
 
 	def prompt(self, vm, var, msg=''):
 		var.set(vm, input('%s? ' % msg))
-
