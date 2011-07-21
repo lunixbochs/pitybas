@@ -1,30 +1,27 @@
 # -*- coding: utf-8 -*-
 import tokens
-from common import ParseError
+from common import ParseError, test_number
 from expression import Expression, Bracketed, Arguments, Tuple
 
-LOOKUP = {}
-LOOKUP.update(tokens.Token.tokens)
-LOOKUP.update(tokens.Variable.tokens)
-LOOKUP.update(tokens.Function.tokens)
-
-SYMBOLS = []
-TOKENS = tokens.Token.tokens.keys()
-VARIABLES = tokens.Variable.tokens.keys()
-FUNCTIONS = tokens.Function.tokens.keys()
-TOKENS += VARIABLES + FUNCTIONS
-
-TOKENS.sort()
-TOKENS.reverse()
-
-for t in TOKENS:
-	if not t[0] in SYMBOLS and not t.isalpha():
-		SYMBOLS.append(t[0])
-
-def test_number(num):
-	return str(num).lstrip('-').replace('.', '', 1).isdigit()
-
 class Parser:
+	LOOKUP = {}
+	LOOKUP.update(tokens.Token.tokens)
+	LOOKUP.update(tokens.Variable.tokens)
+	LOOKUP.update(tokens.Function.tokens)
+
+	SYMBOLS = []
+	TOKENS = tokens.Token.tokens.keys()
+	VARIABLES = tokens.Variable.tokens.keys()
+	FUNCTIONS = tokens.Function.tokens.keys()
+	TOKENS += VARIABLES + FUNCTIONS
+
+	TOKENS.sort()
+	TOKENS.reverse()
+
+	for t in TOKENS:
+		if not t[0] in SYMBOLS and not t.isalpha():
+			SYMBOLS.append(t[0])
+
 	def __init__(self, source):
 		self.source = unicode(source)
 		self.length = len(source)
@@ -34,6 +31,20 @@ class Parser:
 
 		self.stack = []
 	
+	@staticmethod
+	def parse_line(vm, line):
+		if not line: return
+		
+		parser = Parser(line)
+		parser.TOKENS = parser.VARIABLES + parser.FUNCTIONS
+
+		parser.SYMBOLS = []
+		for t in parser.TOKENS:
+			if not t[0] in parser.SYMBOLS and not t.isalpha():
+				parser.SYMBOLS.append(t[0])
+
+		return parser.parse()[0][0].get(vm)
+
 	def clean(self):
 		self.source = self.source.replace('\r\n', '\n').replace('\r', '\n')
 	
@@ -52,21 +63,9 @@ class Parser:
 			if line:
 				new = []
 				expr = None
-				last_none = False
 				for token in line:
-					none = (token.priority == tokens.Pri.NONE)
-
 					if token.priority > tokens.Pri.INVALID:
 						expr = expr or Expression()
-						if none and last_none:
-							# fill in implied multiplication
-							# negative numbers actually have implied addition
-							if isinstance(token, tokens.Value)\
-								and test_number(token.value) and int(token.value) < 0:
-									expr.append(tokens.Plus())
-							else:
-								expr.append(tokens.Mult())
-
 						expr.append(token)
 					else:
 						if expr:
@@ -74,8 +73,6 @@ class Parser:
 
 						expr = None
 						new.append(token)
-					
-					last_none = none
 				
 				if expr:
 					new.append(expr)
@@ -98,11 +95,12 @@ class Parser:
 					pops = []
 					for i in xrange(1, len(new)):
 						token = new[i]
-						for typ in last.absorbs:
-							if isinstance(token, typ):
-								last.absorb(token)
-								pops.append(i)
-								break
+						if isinstance(token, last.absorbs):
+							if isinstance(token, Expression):
+								token = token.flatten()
+							
+							last.absorb(token)
+							pops.append(i)
 						
 						last = token
 					
@@ -114,6 +112,7 @@ class Parser:
 	def parse(self):
 		while self.more():
 			char = self.source[self.pos]
+			result = None
 
 			if char in ('\n', ':'):
 				self.close_brackets()
@@ -138,10 +137,13 @@ class Parser:
 							if stack.end == char:
 								for s in stacks:
 									stack.append(s)
+
+								if not isinstance(stack, Arguments):
+									result = stack
 									
-								result = stack
 								stack.finish()
 								self.inc()
+								break
 							else:
 								self.error('tried to end \'%s\' with: "%s" (expecting "%s")' % (stack, char, stack.end))
 						else:
@@ -172,9 +174,9 @@ class Parser:
 				continue
 			elif '0' <= char <= '9'	or isinstance(self.token(sub=True, inc=False), tokens.Minus) and self.number(test=True):
 				result = tokens.Value(self.number())
-			elif ('a' <= char <= 'z') or ('A' <= char <= 'Z'):
+			elif char.isalpha():
 				result = self.token()
-			elif char in SYMBOLS:
+			elif char in self.SYMBOLS:
 				result = self.symbol()
 			elif char == '"':
 				result = tokens.Value(self.string())
@@ -184,7 +186,8 @@ class Parser:
 			if isinstance(result, tokens.Store):
 				self.close_brackets()
 
-			self.add(result)
+			if result is not None:
+				self.add(result)
 
 			# functions push the stack into argument mode
 			if isinstance(result, tokens.Function):
@@ -217,9 +220,9 @@ class Parser:
 			return token
 		else:
 			char = self.source[self.pos]
-			if char in LOOKUP:
+			if char in self.LOOKUP:
 				self.inc()
-				return LOOKUP[char]()
+				return self.LOOKUP[char]()
 			else:
 				# a second time to throw the error
 				self.token()
@@ -227,15 +230,15 @@ class Parser:
 	
 	def token(self, sub=False, inc=True):
 		remaining = self.source[self.pos:]
-		for token in TOKENS:
+		for token in self.TOKENS:
 			if remaining.startswith(token):
 				if inc:
 					self.inc(len(token))
-				return LOOKUP[token]()
+				return self.LOOKUP[token]()
 		else:
 			if not sub:
 				near = remaining[:8].split('\n',1)[0]
-				self.error('no token found at pos %i near "%s"' % (self.pos, near))
+				self.error('no token found at pos %i near "%s"' % (self.pos, repr(near)))
 	
 	def number(self, dot=True, test=False, inc=True):
 		num = ''
@@ -263,11 +266,12 @@ class Parser:
 
 		if test_number(num):
 			if test: return True
-			f, i = float(num), int(num)
-			if f != i:
-				return f
-			else:
-				return i
+			try:
+				n = int(num)
+			except ValueError:
+				n = float(num)
+			
+			return n
 		else:
 			if test: return False
 			raise ParseError('invalid number ending at pos %i: %s' % (self.pos, num))
@@ -289,3 +293,4 @@ class Parser:
 			self.inc()
 
 		return ret
+

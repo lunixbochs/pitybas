@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-import string, math, random
+import math, random
 
+import parse
 from common import Pri, ExecutionError
 from expression import Tuple, Expression, Arguments
 
@@ -81,7 +82,7 @@ class Parent:
 		self.absorbs = ()
 
 	def __repr__(self):
-		return self.token
+		return repr(self.token)
 
 class Stub:
 	@classmethod
@@ -95,9 +96,9 @@ class Token(Parent):
 	
 	def __repr__(self):
 		if self.arg:
-			return '%s %s' % (self.token, self.arg)
+			return '%s %s' % (repr(self.token), repr(self.arg))
 		else:
-			return self.token
+			return repr(self.token)
 
 class StubToken(Token, Stub):
 	def run(self, vm): pass
@@ -191,7 +192,10 @@ class SimpleVar(Variable, Stub):
 	def set(self, vm, value): return vm.set_var(self.token, value)
 	def get(self, vm): return vm.get_var(self.token)
 
-for c in string.uppercase:
+class Theta(SimpleVar):
+	token = u'\u03b8'
+
+for c in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ':
 	add_class(c, SimpleVar)
 
 for i in xrange(10):
@@ -299,6 +303,27 @@ class Max(MathFunction):
 		assert len(args) == 2
 		return max(*args)
 
+class Round(MathFunction):
+	token = 'round'
+
+	def call(self, vm, args):
+		assert len(args) in (1, 2)
+
+		if len(args) == 2:
+			places = args[1]
+		else:
+			places = 9
+
+		return round(args[0], places)
+
+class Int(MathFunction):
+	token = 'int'
+
+	def call(self, vm, args):
+		assert len(args) == 1
+
+		return int(args[0])
+
 class nPr(Operator):
 	# TODO: nPr and nCr should support lists
 	priority = Pri.PROB
@@ -375,6 +400,21 @@ class xor(Bool):
 
 # logic
 
+class Equals(Logic):
+	token = '='
+
+	def bool(self, left, right):
+		return left == right
+
+class NotEquals(Logic):
+	token = '~='
+
+	def bool(self, left, right):
+		return left != right
+
+class NotEqualsToken(NotEquals):
+	token = u'≠'
+
 class LessThan(Logic):
 	token = '<'
 	
@@ -410,38 +450,56 @@ class GreaterOrEqualsToken(GreaterOrEquals):
 class Block(StubToken):
 	absorbs = (Expression, Value)
 
+	def find_end(self, vm, or_else=False, cur=False):
+		tokens = vm.find(Block, Then, Else, End, wrap=False)
+		blocks = []
+		thens = 0
+		for row, col, token in tokens:
+			if not cur and token is self:
+				continue
+
+			if isinstance(token, If):
+				continue
+
+			if isinstance(token, Then):
+				thens += 1
+				blocks.append(token)
+			elif isinstance(token, Block):
+				blocks.append(token)
+			elif isinstance(token, End):
+				if (thens == 0 or not or_else) and not blocks:
+					return row, col, token
+				else:
+					b = blocks.pop(0)
+					if isinstance(b, Then):
+						thens -= 1
+			elif or_else and isinstance(token, Else):
+				if thens == 0:
+					return row, col, token
+
 class If(Block):
 	def run(self, vm):
 		if self.arg == None:
 			raise ExecutionError('If statement without condition')
 
 		true = bool(self.arg.get(vm))
-		tokens = vm.find(Else, End, wrap=False)
-
-		els, end = None, None
-		for row, col, token in tokens:
-			if not els and isinstance(token, Else):
-				els = row, col, token
-			elif isinstance(token, End):
-				end = row, col, token
-				break
 
 		cur = vm.cur()
 		if isinstance(cur, Then):
-			if true:
-				vm.push_block()
-				vm.inc()
-			elif els:
-				vm.push_block()
-				row, col, _ = els
-				vm.goto(row, col)
-				vm.inc()
-			elif end:
-				row, col, _ = end
-				vm.goto(row, col)
-				vm.inc()
-			else:
-				raise ExecutionError('If/Then could not find End on negative expression')
+			vm.push_block()
+			vm.inc()
+				
+			if not true:
+				end = self.find_end(vm, or_else=True)
+				if end:
+					row, col, end = end
+					if isinstance(end, End):
+						vm.pop_block()
+
+					vm.goto(row, col)
+					vm.inc()
+				else:
+					raise ExecutionError('If/Then could not find End on negative expression')
 		elif true:
 			vm.run(cur)
 		else:
@@ -456,10 +514,9 @@ class Then(Token):
 class Else(Token):
 	def run(self, vm):
 		row, col, block = vm.pop_block()
-		ends = vm.find(End, wrap=False)
-		for e in ends:
-			row, col, end = e
-			break
+		end = self.find_end(vm)
+		if end:
+			row, col, end = end
 		else:
 			raise ExecutionError('Else could not find End')
 
@@ -483,10 +540,9 @@ class Loop(Block, Stub):
 			vm.push_block((row, col, self))
 			vm.inc()
 		else:
-			tokens = vm.find(End, wrap=False)
-			for row, col, token in tokens:
-				if isinstance(token, End):
-					break
+			end = self.find_end(vm)
+			if end:
+				row, col, end = end
 			else:
 				raise ExecutionError('%s could not find End' % self.token)
 
@@ -534,14 +590,17 @@ class For(Loop, Function):
 
 class End(Token):
 	def run(self, vm):
-		row, col, block = vm.pop_block()
-		block.resume(vm, row, col)
+		try:
+			row, col, block = vm.pop_block()
+			block.resume(vm, row, col)
+		except ExecutionError:
+			pass
 
 class Lbl(StubToken):
 	absorbs = (Expression, Value)
 
 	@staticmethod
-	def guess_label(arg, vm):
+	def guess_label(vm, arg):
 		label = None
 		if isinstance(arg, Expression):
 			arg = arg.flatten()
@@ -556,28 +615,76 @@ class Lbl(StubToken):
 		return label
 	
 	def get_label(self, vm):
-		return Lbl.guess_label(self.arg, vm)
+		return Lbl.guess_label(vm, self.arg)
 
 class Goto(Token):
 	absorbs = (Expression, Value)
 	def run(self, vm):
-		label = Lbl.guess_label(self.arg, vm)
-		
+		Goto.goto(vm, self.arg)
+	
+	@staticmethod
+	def goto(vm, token):
+		label = Lbl.guess_label(vm, token)
 		if label:
-			for row, col, token in vm.find(Lbl):
+			for row, col, token in vm.find(Lbl, wrap=True):
 				if token.get_label(vm) == label:
 					vm.goto(row, col)
-		else:
-			raise ExecutionError('could not find a label to Goto: %s' % self.arg)
+					return
+					
+		raise ExecutionError('could not find a label to Goto: %s' % token)
 
-class Goto(Function):
+class Menu(Function):
 	def run(self, vm):
-		vm.goto(*self.arg.get(vm))
+		args = self.arg.contents[:]
+		l = len(args)
+		if l >= 3 and (l - 3) % 2 == 0:
+			title = args.pop(0)
+			names = args[::2]
+			labels = args[1::2]
+			while True:
+				print
+				print '-[ %s ]-' % title.get(vm)
+				for i in xrange(len(names)):
+					print '%i: %s' %(i+1, names[i].get(vm))
+				
+				choice = raw_input('choice? ')
+				print
+				if choice.isdigit() and 0 < int(choice) <= len(names):
+					label = labels[int(choice)-1]
+					Goto.goto(vm, label)
+					return
+				else:
+					print 'invalid choice'
+					continue
+				
+				break
+		else:
+			raise ExecutionError('Invalid arguments to Menu(): %s' % args)
+
+class Pause(Token):
+	absorbs = (Expression, Variable)
+
+	def run(self, vm):
+		cur = self.arg
+		if cur:
+			if isinstance(cur, Tuple):
+				print '\n'.join(str(x) for x in cur.get(vm))
+			else:
+				print cur.get(vm)
+		else:
+			print
+		
+		raw_input('[press enter]')
 
 # input/output
 
+class ClrHome(Token):
+	def run(self, vm):
+		print '-'*16
+
 class Disp(Token):
-	absorbs = (Expression, Variable)
+	absorbs = (Expression, Variable, Tuple)
+	delimiter = '\n'
 
 	def run(self, vm):
 		cur = self.arg
@@ -586,9 +693,13 @@ class Disp(Token):
 			return
 
 		if isinstance(cur, Tuple):
-			print ', '.join(str(x) for x in cur.get(vm))
+			print self.delimiter.join(str(x) for x in cur.get(vm))
 		else:
 			print cur.get(vm)
+
+class Print(Disp):
+	absorbs = (Expression, Variable, Tuple)
+	delimiter = ', '
 
 class Disp(Function):
 	def run(self, vm):
@@ -609,7 +720,10 @@ class Prompt(Token):
 			self.prompt(vm, self.arg)
 
 	def prompt(self, vm, var):
-		var.set(vm, input('%s? ' % var.token))
+		print var.token + u'?',
+		line = parse.Parser.parse_line(vm, raw_input())
+		print line
+		var.set(vm, line)
 
 	def __repr__(self):
 		return 'Prompt(%s)' % repr(self.arg)
@@ -630,4 +744,9 @@ class Input(Token):
 			raise ExecutionError('Input used with wrong number of arguments')
 
 	def prompt(self, vm, var, msg=''):
-		var.set(vm, input('%s? ' % msg))
+		if msg:
+			print msg,
+
+		line = parse.Parser.parse_line(vm, raw_input())
+		var.set(vm, line)
+

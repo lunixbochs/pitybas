@@ -13,7 +13,7 @@ class Interpreter:
 		string = open(filename, 'r').read().decode('utf8')
 		return Interpreter.from_string(string)
 
-	def __init__(self, code):
+	def __init__(self, code, history=10):
 		self.code = code
 		self.code.append([EOF()])
 		self.line = 0
@@ -21,6 +21,8 @@ class Interpreter:
 		self.expression = None
 		self.blocks = []
 		self.running = []
+		self.history = []
+		self.hist_len = history
 
 		self.vars = {}
 	
@@ -70,21 +72,25 @@ class Interpreter:
 			wrap = kwargs['wrap']
 		else:
 			wrap = False
+
+		if 'pos' in kwargs:
+			pos = kwargs['pos']
+		else:
+			pos = self.line
 		
 		def y(i):
 			line = self.code[i]
 			if line:
-				for t in types:
-					cur = line[0]
-					if isinstance(cur, t):
-						return i, 0, cur
+				cur = line[0]
+				if isinstance(cur, types):
+					return i, 0, cur
 
-		for i in xrange(self.line, len(self.code)):
+		for i in xrange(pos, len(self.code)):
 			ret = y(i)
 			if ret: yield ret
 		
 		if wrap:
-			for i in xrange(0, self.line):
+			for i in xrange(0, pos):
 				ret = y(i)
 				if ret: yield ret
 	
@@ -97,6 +103,9 @@ class Interpreter:
 			raise ExecutionError('cannot goto (%i, %i)' % (row, col))
 
 	def run(self, cur):
+		self.history.append((self.line, self.col, cur))
+		self.history = self.history[-self.hist_len:]
+
 		if cur.can_run:
 			self.running.append((self.line, self.col, cur))
 			self.inc()
@@ -107,7 +116,6 @@ class Interpreter:
 			self.set_var('Ans', cur.get(self))
 		else:
 			raise ExecutionError('cannot seem to run token: %s' % cur)
-
 
 	def execute(self):
 		while not isinstance(self.cur(), EOF):

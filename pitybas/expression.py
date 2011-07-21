@@ -1,5 +1,5 @@
 import tokens
-from common import ExecutionError, ExpressionError, Pri
+from common import ExecutionError, ExpressionError, Pri, test_number
 
 class Base:
 	priority = Pri.NONE
@@ -14,6 +14,17 @@ class Base:
 		self.finished = False
 	
 	def append(self, token):
+		if self.tokens:
+			# implied multiplication
+			if self.tokens[-1].priority == token.priority == tokens.Pri.NONE:
+
+				# negative numbers actually have implied addition
+				if isinstance(token, tokens.Value)\
+					and test_number(token.value) and int(token.value) < 0:
+						self.tokens.append(tokens.Plus())
+				else:
+					self.tokens.append(tokens.Mult())
+
 		self.tokens.append(token)
 	
 	def extend(self, array):
@@ -97,7 +108,7 @@ class Base:
 			
 			token = expr[i-1]
 			expr[i-1] = tokens.Value(token.run(vm, left, right))
-		
+
 		return expr[0].get(vm)
 	
 	def finish(self):
@@ -126,6 +137,8 @@ class Tuple(Base):
 		Base.__init__(self)
 	
 	def append(self, expr):
+		if isinstance(expr, Expression):
+			expr = expr.flatten()
 		self.contents.append(expr)
 	
 	def get(self, vm):
