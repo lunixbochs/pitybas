@@ -7,6 +7,8 @@ Currently, all `.bas` files in tests/ run except circle.bas (due to lack of grap
 	Usage: pb.py [options] filename
 
 	Options:
-	  -h, --help     show this help message and exit
-	  -v, --verbose  verbose output
+		-h, --help        show this help message and exit
+		-d, --dump        dump variables in stacktrace
+		-s, --stacktrace  always stacktrace
+		-v, --verbose     verbose output
 
