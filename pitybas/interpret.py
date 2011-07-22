@@ -102,6 +102,27 @@ class Interpreter:
 		else:
 			raise ExecutionError('cannot goto (%i, %i)' % (row, col))
 
+	def get(self, *var):
+		ret = []
+		for v in var:
+			val = v.get(self)
+			if isinstance(val, complex):
+				if not val.imag:
+					val = val.real
+			
+			if isinstance(val, (float)):
+				# TODO: perhaps limit precision here
+				i = int(val)
+				if val == i:
+					val = i
+
+			ret.append(val)
+
+		if len(ret) == 1:
+			return ret[0]
+
+		return ret
+
 	def run(self, cur):
 		self.history.append((self.line, self.col, cur))
 		self.history = self.history[-self.hist_len:]

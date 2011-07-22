@@ -4,8 +4,9 @@ from interpret import Interpreter
 from common import Error
 
 parser = OptionParser(usage='Usage: pb.py [options] filename')
-parser.add_option('-v', '--verbose', dest="verbose", action="store_true", help="verbose output")
+parser.add_option('-d', '--dump', dest="vardump", action="store_true", help="dump variables in stacktrace")
 parser.add_option('-s', '--stacktrace', dest="stacktrace", action="store_true", help="always stacktrace")
+parser.add_option('-v', '--verbose', dest="verbose", action="store_true", help="verbose output")
 
 (options, args) = parser.parse_args()
 
@@ -29,7 +30,13 @@ def stacktrace(vm, num=None):
 	print
 	print '-===[ Stacktrace ]===-'
 	for row, col, cur in vm.history[-num:]:
-		print ('[%i, %i]:' % (row, col)).ljust(9), repr(cur).replace("u'", '').replace("'", '').replace('E(', '(')
+		print ('[%i, %i]:' % (row, col)).ljust(9), repr(cur).replace("u'", '').replace("'", '')
+
+	if options.vardump:
+		print
+		print '-===[ Variable Dump ]===-'
+		import pprint
+		pprint.pprint(vm.vars)
 
 try:
 	vm.execute()
@@ -44,7 +51,7 @@ except Exception, e:
 	print
 	stacktrace(vm, 6)
 
-	print 'Error on line %i:' % (vm.line),
+	print '%s on line %i:' % (e.__class__.__name__, vm.line),
 
 	if isinstance(e, Error):
 		print e.msg

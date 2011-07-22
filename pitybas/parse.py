@@ -43,7 +43,7 @@ class Parser:
 			if not t[0] in parser.SYMBOLS and not t.isalpha():
 				parser.SYMBOLS.append(t[0])
 
-		return parser.parse()[0][0].get(vm)
+		return vm.get(parser.parse()[0][0])
 
 	def clean(self):
 		self.source = self.source.replace('\r\n', '\n').replace('\r', '\n')

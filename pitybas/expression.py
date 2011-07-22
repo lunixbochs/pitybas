@@ -41,6 +41,48 @@ class Base:
 		
 		return self
 
+	def fill(self):
+		# TODO: instead of this system, perhaps tokens should be able to specify whether they need/want left/right params
+		if not self.tokens: return
+
+		# if we don't have a proper variable:token:variable pairing in the token list,
+		# this method will allow tokens to fill in an implied variable to their left or right
+		new = []
+		for i in xrange(len(self.tokens)):
+			t = self.tokens[i]
+			if (i % 2 == 0 and not t.can_get):
+				left = None
+				right = None
+
+				if i > 0:
+					left = self.tokens[i-1]
+					if not left.can_fill_right:
+						left = None
+
+				right = self.tokens[i]
+				if not right.can_fill_left:
+					right = None
+
+				if left is not None and right is not None:
+					if left < right:
+						left = None
+					else:
+						right = None
+
+				if left is not None:
+					new.append(left.fill_right())
+				elif right is not None:
+					new.append(right.fill_left())
+
+			new.append(t)
+
+		last = new[-1]
+		if not last.can_get:
+			if last.can_fill_right:
+				new.append(last.fill_right())
+
+		self.tokens = new
+
 	def validate(self):
 		if not self.tokens: return
 
@@ -51,6 +93,7 @@ class Base:
 		# make sure expression is ordered (value, token, value, token, value)
 		for i in xrange(len(self.tokens)):
 			t = self.tokens[i]
+			
 			if (i % 2 == 0 and not t.can_get) or ( i % 2 == 1 and not t.can_run):
 				raise ExpressionError('bad token order: %s' % self)
 
@@ -64,7 +107,7 @@ class Base:
 				found_stor = True
 				stor_odd = odd
 			elif found_stor and (odd == stor_odd):
-				raise ExecutionError('Store cannot be followed by non-Store tokens in expression: %s' % self)
+				raise ExpressionError('Store cannot be followed by non-Store tokens in expression: %s' % self)
 	
 	def order(self):
 		# this step returns a list of ordered indicies
@@ -90,6 +133,7 @@ class Base:
 		return ret
 	
 	def get(self, vm):
+		self.fill()
 		self.validate()
 
 		sub = []
@@ -109,7 +153,7 @@ class Base:
 			token = expr[i-1]
 			expr[i-1] = tokens.Value(token.run(vm, left, right))
 
-		return expr[0].get(vm)
+		return vm.get(expr[0])
 	
 	def finish(self):
 		self.finished = True
@@ -142,7 +186,7 @@ class Tuple(Base):
 		self.contents.append(expr)
 	
 	def get(self, vm):
-		return [arg.get(vm) for arg in self.contents]
+		return [vm.get(arg) for arg in self.contents]
 	
 	def __len__(self):
 		return len(self.contents)
