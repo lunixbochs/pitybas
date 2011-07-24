@@ -259,8 +259,12 @@ class Parser:
 			pos += 1
 
 			self.pos, tmp = pos, self.pos
-			num += str(self.number(dot=False))
-			self.pos = tmp
+			try:
+				num += str(self.number(dot=False))
+			except ParseError:
+				pass
+
+			pos, self.pos = self.pos, tmp
 
 		if inc and not test: self.pos = pos
 
