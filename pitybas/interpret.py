@@ -6,14 +6,14 @@ from pitybas.io.simple import IO
 
 class Interpreter:
 	@classmethod
-	def from_string(cls, string):
+	def from_string(cls, string, *args, **kwargs):
 		code = Parser(string).parse()
-		return Interpreter(code)
+		return Interpreter(code, *args, **kwargs)
 	
 	@classmethod
-	def from_file(cls, filename):
+	def from_file(cls, filename, *args, **kwargs):
 		string = open(filename, 'r').read().decode('utf8')
-		return Interpreter.from_string(string)
+		return Interpreter.from_string(string, *args, **kwargs)
 
 	def __init__(self, code, history=10, io=None):
 		if not io: io = IO

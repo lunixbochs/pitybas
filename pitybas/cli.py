@@ -2,11 +2,13 @@ import sys, traceback
 from optparse import OptionParser
 from interpret import Interpreter
 from common import Error
+from pitybas.io.vt100 import IO as vt100
 
 parser = OptionParser(usage='Usage: pb.py [options] filename')
 parser.add_option('-d', '--dump', dest="vardump", action="store_true", help="dump variables in stacktrace")
 parser.add_option('-s', '--stacktrace', dest="stacktrace", action="store_true", help="always stacktrace")
 parser.add_option('-v', '--verbose', dest="verbose", action="store_true", help="verbose output")
+parser.add_option('-i', '--io', dest="io", help="select an IO system. available: simple (default), vt100")
 
 (options, args) = parser.parse_args()
 
@@ -14,8 +16,11 @@ if len(args) != 1:
 	parser.print_help()
 	sys.exit(1)
 
-vm = Interpreter.from_file(args[0])
-vm.hist_len = 20
+io = None
+if options.io == 'vt100':
+	io = vt100
+
+vm = Interpreter.from_file(args[0], history=20, io=io)
 
 if options.verbose:
 	print 'Token stream:'

@@ -871,6 +871,12 @@ class Print(Disp):
 		else:
 			vm.io.disp(msgs)
 
+class Output(Function):
+	def run(self, vm):
+		assert len(self.arg) == 3
+		row, col, msg = vm.get(self.arg)
+		vm.io.output(row, col, msg)
+
 class Prompt(Token):
 	absorbs = (Expression, Variable, Tuple)
 	
@@ -907,11 +913,11 @@ class Input(Token):
 		else:
 			raise ExecutionError('Input used with wrong number of arguments')
 
-	def prompt(self, vm, var, msg=''):
+	def prompt(self, vm, var, msg='?'):
 		if isinstance(var, Str):
 			is_str = True
 		else:
 			is_str = False
 		
-		val = vm.io.input(msg + '?', is_str)
+		val = vm.io.input(msg, is_str)
 		var.set(vm, val)

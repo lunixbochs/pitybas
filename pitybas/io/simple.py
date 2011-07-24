@@ -41,7 +41,6 @@ class IO:
 		while True:
 			i = 1
 
-			print menu
 			for title, entries in menu:
 				print '-[ %s ]-' % self.vm.get(title)
 				for name, label in entries:
