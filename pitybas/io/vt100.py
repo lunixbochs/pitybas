@@ -144,6 +144,9 @@ class VT:
 			tty.setraw(fd)
 
 			ch = sys.stdin.read(1)
+			if ch == '\003':
+				raise KeyboardInterrupt
+				
 			if ch == '\033':
 				# control sequence
 				ch = sys.stdin.read(1)
@@ -212,6 +215,7 @@ class IO:
 
 	def output(self, row, col, msg):
 		self.vt.output(row, col, msg)
+		self.vt.flush()
 
 	def disp(self, msg=''):
 		if isinstance(msg, (complex, int, float)):
