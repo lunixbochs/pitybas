@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 import math, random
 
-import parse
-from common import Pri, ExecutionError, ParseError
+from common import Pri, ExecutionError
 from expression import Tuple, Expression, Arguments
 
 # helpers
@@ -214,6 +213,9 @@ class Theta(SimpleVar):
 
 for c in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ':
 	add_class(c, SimpleVar)
+
+class Str(SimpleVar, Stub):
+	pass
 
 for i in xrange(10):
 	add_class('Str%i' % i, SimpleVar)
@@ -808,25 +810,11 @@ class Menu(Function):
 		l = len(args)
 		if l >= 3 and (l - 3) % 2 == 0:
 			title = args.pop(0)
-			names = args[::2]
-			labels = args[1::2]
-			while True:
-				print
-				print '-[ %s ]-' % vm.get(title)
-				for i in xrange(len(names)):
-					print '%i: %s' %(i+1, vm.get(names[i]))
-				
-				choice = raw_input('choice? ')
-				print
-				if choice.isdigit() and 0 < int(choice) <= len(names):
-					label = labels[int(choice)-1]
-					Goto.goto(vm, label)
-					return
-				else:
-					print 'invalid choice'
-					continue
-				
-				break
+
+			menu = (title, zip(args[::2], args[1::2])),
+
+			label = vm.io.menu(menu)
+			Goto.goto(vm, label)
 		else:
 			raise ExecutionError('Invalid arguments to Menu(): %s' % args)
 
@@ -836,44 +824,42 @@ class Pause(Token):
 	def run(self, vm):
 		cur = self.arg
 		if cur:
-			if isinstance(cur, Tuple):
-				print '\n'.join(str(x) for x in vm.get(cur))
-			else:
-				print vm.get(cur)
+			vm.io.pause(vm.get(cur))
 		else:
-			print
-		
-		raw_input('[press enter]')
+			vm.io.pause()
 
 # input/output
 
 class ClrHome(Token):
 	def run(self, vm):
-		print '-'*16
+		vm.io.clear()
 
 class Disp(Token):
 	absorbs = (Expression, Variable, Tuple)
-	delimiter = '\n'
 
 	def run(self, vm):
 		cur = self.arg
 		if not cur:
-			print
+			self.disp(vm)
 			return
 
-		if isinstance(cur, Tuple):
-			print self.delimiter.join(str(x) for x in vm.get(cur))
+		self.disp(vm, vm.get(cur))
+	
+	def disp(self, vm, msgs=None):
+		if isinstance(msgs, (tuple, list)):
+			for msg in msgs:
+				vm.io.disp(msg)
 		else:
-			print vm.get(cur)
+			vm.io.disp(msgs)
 
 class Print(Disp):
 	absorbs = (Expression, Variable, Tuple)
-	delimiter = ', '
 
-class Disp(Function):
-	def run(self, vm):
-		print ', '.join(str(x) for x in vm.get(self.arg))
-
+	def disp(self, vm, msgs=None):
+		if isinstance(msgs, (tuple, list)):
+			vm.io.disp(', '.join(str(x) for x in msgs))
+		else:
+			vm.io.disp(msgs)
 
 class Prompt(Token):
 	absorbs = (Expression, Variable, Tuple)
@@ -889,23 +875,14 @@ class Prompt(Token):
 			self.prompt(vm, self.arg)
 
 	def prompt(self, vm, var):
-		while True:
-			try:
-				print var.token + u'?',
-				line = parse.Parser.parse_line(vm, raw_input())
-				print line
-				var.set(vm, line)
-			except ParseError:
-				print 'ERR:DATA'
-				print
-				continue
-
-			break
+		val = vm.io.input(var.token + '?')
+		var.set(vm, val)
 
 	def __repr__(self):
 		return 'Prompt(%s)' % repr(self.arg)
 
 class Input(Token):
+	# TODO: how is string input handled on calc? been too long
 	absorbs = (Expression, Variable, Tuple)
 
 	def run(self, vm):
@@ -921,17 +898,10 @@ class Input(Token):
 			raise ExecutionError('Input used with wrong number of arguments')
 
 	def prompt(self, vm, var, msg=''):
-		while True:
-			try:
-				if msg:
-					print msg,
-
-				line = parse.Parser.parse_line(vm, raw_input())
-				var.set(vm, line)
-			except ParseError:
-				print 'ERR:DATA'
-				print
-				continue
-
-			break
-
+		if isinstance(var, Str):
+			is_str = True
+		else:
+			is_str = False
+		
+		val = vm.io.input(msg + '?', is_str)
+		var.set(vm, val)

@@ -2,6 +2,8 @@ from parse import Parser
 from tokens import EOF, Value
 from common import ExecutionError
 
+from pitybas.io.simple import IO
+
 class Interpreter:
 	@classmethod
 	def from_string(cls, string):
@@ -13,7 +15,10 @@ class Interpreter:
 		string = open(filename, 'r').read().decode('utf8')
 		return Interpreter.from_string(string)
 
-	def __init__(self, code, history=10):
+	def __init__(self, code, history=10, io=None):
+		if not io: io = IO
+		self.io = io(self)
+
 		self.code = code
 		self.code.append([EOF()])
 		self.line = 0
