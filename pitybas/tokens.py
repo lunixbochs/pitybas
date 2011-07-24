@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import math, random
+import math, random, time
 
 from common import Pri, ExecutionError, StopError, ReturnError
 from expression import Tuple, Expression, Arguments
@@ -590,7 +590,7 @@ class GreaterThan(Logic):
 class LessOrEquals(Logic):
 	token = '<='
 
-	def run(self, left, right):
+	def bool(self, left, right):
 		return left <= right
 
 class LessOrEqualsToken(LessOrEquals):
