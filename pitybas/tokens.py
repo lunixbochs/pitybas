@@ -335,6 +335,16 @@ class CubeRoot(MathExprFunction):
 			# oh well
 			return i
 
+class SciNot(Operator):
+	priority = Pri.EXPONENT
+	token = u'ᴇ'
+
+	def fill_left(self):
+		return Value(1)
+
+	def op(self, left, right):
+		return left * (10 ** right)
+
 class Abs(MathExprFunction):
 	token = 'abs'
 
