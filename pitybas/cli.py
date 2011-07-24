@@ -8,7 +8,7 @@ parser = OptionParser(usage='Usage: pb.py [options] filename')
 parser.add_option('-d', '--dump', dest="vardump", action="store_true", help="dump variables in stacktrace")
 parser.add_option('-s', '--stacktrace', dest="stacktrace", action="store_true", help="always stacktrace")
 parser.add_option('-v', '--verbose', dest="verbose", action="store_true", help="verbose output")
-parser.add_option('-i', '--io', dest="io", help="select an IO system. available: simple (default), vt100")
+parser.add_option('-i', '--io', dest="io", help="select an IO system: simple (default), vt100")
 
 (options, args) = parser.parse_args()
 
