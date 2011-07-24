@@ -227,8 +227,9 @@ class Stor(Token):
 	priority = Pri.SET
 
 	def run(self, vm, left, right):
-		right.set(vm, vm.get(left))
-		return vm.get(left)
+		ans = vm.get(left)
+		right.set(vm, ans)
+		return ans
 
 class Store(Stor): token = '->'
 
@@ -921,3 +922,7 @@ class Input(Token):
 		
 		val = vm.io.input(msg, is_str)
 		var.set(vm, val)
+
+class getKey(Variable):
+	def get(self, vm):
+		return vm.io.getkey()

@@ -25,6 +25,9 @@ class IO:
 				print 'ERR:DATA'
 				print
 
+	def getkey(self):
+		raise NotImplementedError
+
 	def output(self, x, y, msg):
 		print msg
 

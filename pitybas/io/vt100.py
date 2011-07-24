@@ -3,6 +3,54 @@ from pitybas.common import ParseError
 
 import sys, tty, termios
 
+keycodes = {
+	'left': 24,
+	'up': 25,
+	'right': 26,
+	'down': 34,
+	'A': 41,
+	'B': 42,
+	'C': 43,
+	'D': 51,
+	'E': 52, 
+	'F': 53, 
+	'G': 54, 
+	'H': 55, 
+	'I': 61, 
+	'J': 62, 
+	'K': 63, 
+	'L': 64, 
+	'M': 65, 
+	'N': 71, 
+	'O': 72, 
+	'P': 73, 
+	'Q': 74, 
+	'R': 75, 
+	'S': 81, 
+	'T': 82, 
+	'U': 83, 
+	'V': 84, 
+	'W': 85, 
+	'X': 91, 
+	'Y': 92,
+	'Z': 93,
+	'"': 95,
+	' ': 102,
+	':': 103,
+	'?': 104,
+	'enter': 105 
+}
+
+class SafeIO:
+	def __init__(self, fd):
+		self.fd = fd
+	
+	def __enter__(self):
+		self.old = termios.tcgetattr(self.fd)
+
+	def __exit__(self, *args):
+		termios.tcsetattr(self.fd, termios.TCSANOW, self.old)
+
 class VT:
 	def __init__(self, width=16, height=8):
 		self.width = width
@@ -91,14 +139,28 @@ class VT:
 
 	def getch(self):
 		fd = sys.stdin.fileno()
-		old = termios.tcgetattr(fd)
-		tty.setraw(sys.stdin.fileno())
 
-		ch = sys.stdin.read(1)
+		with SafeIO(fd):
+			tty.setraw(fd)
 
-		fd = sys.stdin.fileno()
-		termios.tcsetattr(fd, termios.TCSANOW, old)
-		return ch
+			ch = sys.stdin.read(1)
+			if ch == '\033':
+				# control sequence
+				ch = sys.stdin.read(1)
+				if ch == '[':
+					ch = sys.stdin.read(1)
+					if ch == 'A':
+						return 'up'
+					elif ch == 'B':
+						return 'down'
+					elif ch == 'C':
+						return 'right'
+					elif ch == 'D':
+						return 'left'
+			
+				return None
+			
+			return ch
 
 class IO:
 	def __init__(self, vm):
@@ -131,6 +193,13 @@ class IO:
 			except ParseError:
 				print 'ERR:DATA'
 				print
+	
+	def getkey(self):
+		key = self.vt.getch()
+		if key in keycodes:
+			return keycodes[key]
+		else:
+			return 0
 
 	def output(self, row, col, msg):
 		self.vt.output(row, col, msg)
