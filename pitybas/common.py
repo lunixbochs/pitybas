@@ -5,6 +5,9 @@ class Error(Exception):
 	   def __str__(self):
 		   return self.msg
 
+class StopError(Exception): pass
+class ReturnError(Exception): pass
+
 class ParseError(Error): pass
 class ExecutionError(Error): pass
 class ExpressionError(Error): pass

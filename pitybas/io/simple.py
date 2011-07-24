@@ -5,6 +5,12 @@ class IO:
 	def __init__(self, vm):
 		self.vm = vm
 
+	def __enter__(self):
+		return self
+	
+	def __exit__(self, *args):
+		pass
+
 	def clear(self):
 		print '-'*16
 

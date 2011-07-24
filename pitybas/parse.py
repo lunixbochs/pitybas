@@ -3,6 +3,9 @@ import tokens
 from common import ParseError, test_number
 from expression import Expression, Bracketed, Arguments, Tuple
 
+# TODO: lists via ∟ and l
+# TODO: matricies via [A], etc
+
 class Parser:
 	LOOKUP = {}
 	LOOKUP.update(tokens.Token.tokens)

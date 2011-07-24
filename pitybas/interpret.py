@@ -1,6 +1,6 @@
 from parse import Parser
 from tokens import EOF, Value
-from common import ExecutionError
+from common import ExecutionError, StopError, ReturnError
 
 from pitybas.io.simple import IO
 
@@ -144,6 +144,12 @@ class Interpreter:
 			raise ExecutionError('cannot seem to run token: %s' % cur)
 
 	def execute(self):
-		while not isinstance(self.cur(), EOF):
-			cur = self.cur()
-			self.run(cur)
+		with self.io:
+			try:
+				while not isinstance(self.cur(), EOF):
+					cur = self.cur()
+					self.run(cur)
+			except StopError:
+				pass
+			except ReturnError:
+				pass

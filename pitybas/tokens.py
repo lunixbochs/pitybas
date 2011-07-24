@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import math, random
 
-from common import Pri, ExecutionError
+from common import Pri, ExecutionError, StopError, ReturnError
 from expression import Tuple, Expression, Arguments
 
 # helpers
@@ -838,6 +838,14 @@ class Pause(Token):
 			vm.io.pause(vm.get(cur))
 		else:
 			vm.io.pause()
+
+class Stop(Token):
+	def run(self, vm):
+		raise StopError
+
+class Return(Token):
+	def run(self, vm):
+		raise ReturnError
 
 # input/output
 

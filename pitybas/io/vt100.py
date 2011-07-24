@@ -166,6 +166,13 @@ class IO:
 	def __init__(self, vm):
 		self.vm = vm
 		self.vt = VT()
+	
+	def __enter__(self):
+		self.vt.e('[?25l')
+		return self
+	
+	def __exit__(self, *args):
+		self.vt.e('[?25h')
 
 	def clear(self):
 		self.vt.clear()
@@ -180,7 +187,9 @@ class IO:
 				if msg:
 					print msg,
 
+				self.vt.e('[?25h')
 				line = raw_input()
+				self.vt.e('[?25l')
 
 				self.vt.flush()
 				self.vt.pop()
@@ -230,7 +239,9 @@ class IO:
 					lookup.append(label)
 					i += 1
 				
+			self.vt.e('[?25h')
 			choice = raw_input('choice? ')
+			self.vt.e('[?25l')
 			print
 			if choice.isdigit() and 0 < int(choice) <= len(lookup):
 				label = lookup[int(choice)-1]
