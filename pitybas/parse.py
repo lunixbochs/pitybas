@@ -339,13 +339,13 @@ class Parser:
 
 	def list(self):
 		self.inc()
-		name = self.alnum()
+		name = self.all()
 
 		return tokens.List(name)
 
 	def matrix(self):
 		self.inc()
-		name = self.alnum()
+		name = self.all()
 
 		assert self.more() and self.source[self.pos] == ']'
 		self.inc()
