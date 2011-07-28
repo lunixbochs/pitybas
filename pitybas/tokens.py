@@ -265,8 +265,51 @@ class Matrix(Variable, Stub):
 		return '[%s]' % self.name
 
 class dim(Function):
-	def get(self, vm, args):
-		print args
+	def get(self, vm):
+		assert self.arg and len(self.arg) == 1
+
+		arg = self.arg.contents[0]
+		assert isinstance(arg, (List, Matrix))
+		if isinstance(arg, List):
+			return len(vm.get(arg))
+		elif isinstance(arg, Matrix):
+			arg = vm.get(arg)
+			return [len(arg), len(arg[0])]
+	
+	def set(self, vm, value):
+		assert self.arg and len(self.arg) == 1
+
+		arg = self.arg.contents[0]
+		assert isinstance(arg, (List, Matrix))
+		name = arg.name
+
+		if isinstance(arg, List):
+			assert isinstance(value, int)
+
+			try:
+				l = vm.get_list(name)
+			except KeyError:
+				l = []
+
+			l = l[:value] + ([0] * (value - len(l)))
+			vm.set_list(name, l)
+		elif isinstance(arg, Matrix):
+			assert isinstance(value, list) and len(value) == 2
+
+			a, b = value
+			try:
+				m = vm.get_matrix(name)
+			except KeyError:
+				m = [[]]
+			
+			m = m[:a]
+			for i in xrange(len(m), a):
+				m += [0] * b
+			
+			m = [l[:b] + ([0] * (b - len(l))) for l in m]
+			vm.set_matrix(name, m)
+		
+		return value
 
 class Ans(Const):
 	def get(self, vm): return vm.get_var('Ans')
