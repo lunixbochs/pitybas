@@ -38,10 +38,6 @@ Disp "comma Disp test"
 Disp 1, 2, 3, "four!"
 Disp
 
-Disp "function test"
-Disp(1, 2
-Disp
-
 Disp "goto test
 Goto A
 Disp "this should not display"

@@ -4,12 +4,6 @@ from common import ParseError, test_number
 from expression import Expression, Bracketed, FunctionArgs, Tuple, ParenExpr, ListExpr, MatrixExpr
 from expression import Base as BaseExpression
 
-# TODO: lists via ∟ and l
-# TODO: matricies via [A], etc
-
-# TODO: lists via ∟ and l
-# TODO: matricies via [A], etc
-
 class Parser:
 	LOOKUP = {}
 	LOOKUP.update(tokens.Token.tokens)
@@ -197,7 +191,7 @@ class Parser:
 				continue
 			elif '0' <= char <= '9'	or isinstance(self.token(sub=True, inc=False), tokens.Minus) and self.number(test=True):
 				result = tokens.Value(self.number())
-			elif char in u'l∟' and self.more(self.pos+1) and self.source[self.pos+1].isalnum():
+			elif char in u'l∟' and self.more(self.pos+1) and self.source[self.pos+1] in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789':
 				result = self.list()
 			elif char.isalpha():
 				result = self.token()
@@ -331,11 +325,11 @@ class Parser:
 
 		return ret
 
-	def alnum(self):
+	def all(self, match='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'):
 		ret = ''
 		while self.more():
 			char = self.source[self.pos]
-			if char.isalnum():
+			if char in match:
 				ret += char
 				self.inc()
 			else:
