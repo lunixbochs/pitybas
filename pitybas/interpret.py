@@ -33,6 +33,7 @@ class Interpreter:
 		self.vars = {}
 		self.lists = {}
 		self.matrix = {}
+		self.fixed = -1
 	
 	def cur(self):
 		return self.code[self.line][self.col]
@@ -142,6 +143,15 @@ class Interpreter:
 			return ret[0]
 
 		return ret
+	
+	def disp_round(self, num):
+		if not isinstance(num, (int, float, complex)):
+			return num
+
+		if self.fixed < 0:
+			return num
+		else:
+			return round(num, self.fixed)
 
 	def run(self, cur):
 		self.history.append((self.line, self.col, cur))

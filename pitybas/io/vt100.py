@@ -92,6 +92,7 @@ class VT:
 		self.e('[%i;%iH' % (row, col))
 	
 	def wrap(self, msg):
+		msg = unicode(msg)
 		first = self.width - self.col + 1
 		first, msg = msg[:first], msg[first:]
 		lines = [first]

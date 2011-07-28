@@ -7,6 +7,8 @@ class Base:
 	can_run = False
 	can_set = False
 	can_get = True
+	can_fill_left = False
+	can_fill_right = False
 	absorbs = ()
 
 	end = None
@@ -19,8 +21,15 @@ class Base:
 		if self.contents:
 			prev = self.contents[-1]
 
+			# the minus sign implies a * -1 when used by itself
+			if isinstance(prev, tokens.Minus):
+				# TODO: fix this the rest of the way
+				if len(self.contents) == 1:
+					self.contents.pop()
+					self.contents += [tokens.Value(-1), tokens.Mult()]
+
 			# absorb: tokens can absorb the next token from the expression if it matches a list of types
-			if isinstance(token, prev.absorbs):
+			elif isinstance(token, prev.absorbs):
 				if isinstance(token, Base):
 					token = token.flatten()
 
@@ -36,7 +45,7 @@ class Base:
 						self.contents.append(tokens.Plus())
 				else:
 					self.contents.append(tokens.Mult())
-
+		
 		self.contents.append(token)
 	
 	def extend(self, array):

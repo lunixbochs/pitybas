@@ -202,7 +202,7 @@ class List(Variable, Stub):
 	
 	def get(self, vm):
 		if self.arg:
-			arg = vm.get(self.arg)
+			arg = vm.get(self.arg)[0]
 			assert isinstance(arg, int)
 			return vm.get_list(self.name)[arg-1]
 
@@ -212,7 +212,7 @@ class List(Variable, Stub):
 		if self.arg:
 			arg = vm.get(self.arg)[0]
 			assert isinstance(arg, int)
-			assert isinstance(value, int)
+			assert isinstance(value, (int, float, complex))
 
 			l = vm.get_list(self.name)[:]
 			l[arg-1] = value
@@ -250,7 +250,7 @@ class Matrix(Variable, Stub):
 		if self.arg:
 			arg = vm.get(self.arg)
 			assert isinstance(arg, list) and len(arg) == 2
-			assert isinstance(value, int)
+			assert isinstance(value, (int, float, complex))
 
 			m = vm.get_matrix(self.name)
 			m[arg[0]-1][arg[1]-1] = value
@@ -303,12 +303,37 @@ class dim(Function):
 			
 			m = m[:a]
 			for i in xrange(len(m), a):
-				m += [0] * b
+				n = ([0] * b)
+				m.append(n)
 			
 			m = [l[:b] + ([0] * (b - len(l))) for l in m]
 			vm.set_matrix(name, m)
 		
 		return value
+
+class Fill(Function):
+	def run(self, vm):
+		assert self.arg and len(self.arg) == 2
+		num, var = self.arg.contents
+		num = vm.get(num)
+
+		assert isinstance(num, (int, float, complex))
+		assert isinstance(var, (List, Matrix))
+
+		if isinstance(var, List):
+			l = [num for i in xrange(len(vm.get(var)))]
+			var.set(vm, l)
+		elif isinstance(var, Matrix):
+			m = []
+			o = vm.get(var)
+			for a in o:
+				c = []
+				for b in a:
+					c.append(num)
+				
+				m.append(c)
+			
+			var.set(vm, m)
 
 class Ans(Const):
 	def get(self, vm): return vm.get_var('Ans')
@@ -909,7 +934,7 @@ class Lbl(StubToken):
 		elif isinstance(arg, Variable):
 			label = arg.token
 		elif isinstance(arg, Expression):
-			label = vm.get(arg)
+			label = ''.join([a.token for a in arg.contents if not isinstance(a, Mult)])
 		
 		return label
 	
@@ -970,6 +995,20 @@ class ClrHome(Token):
 	def run(self, vm):
 		vm.io.clear()
 
+class Float(Token):
+	def run(self, vm):
+		vm.fixed = -1
+
+class Fix(Token):
+	absorbs = (Value, Expression)
+
+	def run(self, vm):
+		assert self.arg is not None
+		arg = vm.get(self.arg)
+		assert arg >= 0
+
+		vm.fixed = arg
+
 class Disp(Token):
 	absorbs = (Expression, Variable, Tuple)
 
@@ -984,24 +1023,24 @@ class Disp(Token):
 	def disp(self, vm, msgs=None):
 		if isinstance(msgs, (tuple, list)):
 			for msg in msgs:
-				vm.io.disp(msg)
+				vm.io.disp(vm.disp_round(msg))
 		else:
-			vm.io.disp(msgs)
+			vm.io.disp(vm.disp_round(msgs))
 
 class Print(Disp):
 	absorbs = (Expression, Variable, Tuple)
 
 	def disp(self, vm, msgs=None):
 		if isinstance(msgs, (tuple, list)):
-			vm.io.disp(', '.join(str(x) for x in msgs))
+			vm.io.disp(', '.join(str(vm.disp_round(x)) for x in msgs))
 		else:
-			vm.io.disp(msgs)
+			vm.io.disp(vm.disp_round(msgs))
 
 class Output(Function):
 	def run(self, vm):
 		assert len(self.arg) == 3
 		row, col, msg = vm.get(self.arg)
-		vm.io.output(row, col, msg)
+		vm.io.output(row, col, vm.disp_round(msg))
 
 class Prompt(Token):
 	absorbs = (Expression, Variable, Tuple)

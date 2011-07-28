@@ -189,7 +189,8 @@ class Parser:
 
 				self.inc()
 				continue
-			elif '0' <= char <= '9'	or isinstance(self.token(sub=True, inc=False), tokens.Minus) and self.number(test=True):
+			elif '0' <= char <= '9' or char == '.'\
+					or isinstance(self.token(sub=True, inc=False), tokens.Minus) and self.number(test=True):
 				result = tokens.Value(self.number())
 			elif char in u'l∟' and self.more(self.pos+1) and self.source[self.pos+1] in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789':
 				result = self.list()
