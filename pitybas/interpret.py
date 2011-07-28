@@ -3,6 +3,7 @@ from tokens import EOF, Value
 from common import ExecutionError, StopError, ReturnError
 
 from pitybas.io.simple import IO
+from expression import Base
 
 class Interpreter:
 	@classmethod
@@ -30,6 +31,8 @@ class Interpreter:
 		self.hist_len = history
 
 		self.vars = {}
+		self.lists = {}
+		self.matrix = {}
 	
 	def cur(self):
 		return self.code[self.line][self.col]
@@ -51,11 +54,23 @@ class Interpreter:
 		return self.vars[var]
 	
 	def set_var(self, var, value):
-		if isinstance(value, Value):
+		if isinstance(value, (Value, Base)):
 			value = value.get(self)
 
 		self.vars[var] = value
 		return value
+	
+	def get_matrix(self, name):
+		return self.matrix[name]
+	
+	def set_matrix(self, name, value):
+		self.matrix[name] = value
+	
+	def get_list(self, name):
+		return self.lists[name]
+	
+	def set_list(self, name, value):
+		self.lists[name] = value
 
 	def push_block(self, block=None):
 		if not block and self.running:

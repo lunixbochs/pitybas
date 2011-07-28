@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import math, random, time
+import math, random
 
 from common import Pri, ExecutionError, StopError, ReturnError
 from expression import Tuple, Expression, Arguments
@@ -183,7 +183,7 @@ class Const(Variable, Stub):
 	def set(self, vm, value): raise InvalidOperation
 	def get(self, vm): return self.value
 
-class Value(Const):
+class Value(Const, Stub):
 	def __init__(self, value):
 		self.value = value
 		Variable.__init__(self)
@@ -192,6 +192,76 @@ class Value(Const):
 
 	def __repr__(self):
 		return repr(self.value)
+
+class List(Variable, Stub):
+	absorbs = (Arguments,)
+
+	def __init__(self, name):
+		self.name = name
+		super(List, self).__init__()
+	
+	def get(self, vm):
+		if self.arg:
+			arg = vm.get(self.arg)
+			assert isinstance(arg, int)
+			return vm.get_list(self.name)[arg-1]
+
+		return vm.get_list(self.name)
+	
+	def set(self, vm, value):
+		if self.arg:
+			arg = vm.get(self.arg)[0]
+			assert isinstance(arg, int)
+			assert isinstance(value, int)
+
+			l = vm.get_list(self.name)[:]
+			l[arg-1] = value
+			vm.set_list(self.name, l)
+		else:
+			assert isinstance(value, list)
+			vm.set_list(self.name, value)
+
+		return value
+	
+	def __repr__(self):
+		if self.arg:
+			return 'l%s(%s)' % (self.name, self.arg)
+
+		return 'l%s' % self.name
+
+class ListToken(List):
+	token = u'∟'
+
+class Matrix(Variable, Stub):
+	absorbs = (Arguments,)
+
+	def __init__(self, name):
+		self.name = name
+	
+	def get(self, vm):
+		if self.arg:
+			arg = vm.get(self.arg)
+			assert isinstance(arg, list) and len(arg) == 2
+			return vm.get_matrix(self.name)[arg[0]-1][arg[1]-1]
+		
+		return vm.get_matrix(self.name)
+	
+	def set(self, vm, value):
+		if self.arg:
+			arg = vm.get(self.arg)
+			assert isinstance(arg, list) and len(arg) == 2
+			assert isinstance(value, int)
+
+			m = vm.get_matrix(self.name)
+			m[arg[0]-1][arg[1]-1] = value
+		else:
+			assert isinstance(value, list)
+			vm.set_matrix(self.name, value)
+		
+		return value
+	
+	def __repr__(self):
+		return '[%s]' % self.name
 
 class Ans(Const):
 	def get(self, vm): return vm.get_var('Ans')
