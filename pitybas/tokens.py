@@ -197,7 +197,7 @@ class Value(Const, Stub):
 class List(Variable, Stub):
 	absorbs = (Arguments,)
 
-	def __init__(self, name):
+	def __init__(self, name=None):
 		self.name = name
 		super(List, self).__init__()
 	
@@ -236,7 +236,7 @@ class ListToken(List):
 class Matrix(Variable, Stub):
 	absorbs = (Arguments,)
 
-	def __init__(self, name):
+	def __init__(self, name=None):
 		self.name = name
 	
 	def get(self, vm):
@@ -263,6 +263,10 @@ class Matrix(Variable, Stub):
 	
 	def __repr__(self):
 		return '[%s]' % self.name
+
+class dim(Function):
+	def get(self, vm, args):
+		print args
 
 class Ans(Const):
 	def get(self, vm): return vm.get_var('Ans')
