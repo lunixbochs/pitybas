@@ -174,7 +174,13 @@ class Interpreter:
 				while not isinstance(self.cur(), EOF):
 					cur = self.cur()
 					self.run(cur)
-			except StopError:
-				pass
-			except ReturnError:
-				pass
+			except StopError, e:
+				if e.message:
+					print
+					print 'Stopped:', e.message
+			except ReturnError, e:
+				if e.message:
+					print
+					print 'Returned:', e.message
+		
+		print

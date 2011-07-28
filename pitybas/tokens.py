@@ -167,7 +167,7 @@ class StubFunction(Function, Stub):
 
 class EOF(Token, Stub):
 	def run(self, vm):
-		vm.done()
+		raise StopError
 
 class Const(Variable, Stub):
 	def __init__(self, value):
@@ -801,7 +801,7 @@ class If(Block):
 					vm.goto(row, col)
 					vm.inc()
 				else:
-					raise ExecutionError('If/Then could not find End on negative expression')
+					raise StopError('If/Then could not find End on negative expression')
 		elif true:
 			vm.run(cur)
 		else:
@@ -821,7 +821,7 @@ class Else(Token):
 		if end:
 			row, col, end = end
 		else:
-			raise ExecutionError('Else could not find End')
+			raise StopError('Else could not find End')
 
 		vm.goto(row, col)
 		vm.inc()
@@ -850,7 +850,7 @@ class Loop(Block, Stub):
 		if end:
 			row, col, end = end
 		else:
-			raise ExecutionError('%s could not find End' % self.token)
+			raise StopError('%s could not find End' % self.token)
 
 		vm.goto(row, col)
 		vm.inc()
