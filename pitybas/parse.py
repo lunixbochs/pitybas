@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
 import tokens
 from common import ParseError, test_number
-from expression import Expression, Bracketed, Arguments, Tuple
+from expression import Expression, Bracketed, FunctionArgs, Tuple, ParenExpr, ListExpr, MatrixExpr
+from expression import Base as BaseExpression
+
+# TODO: lists via ∟ and l
+# TODO: matricies via [A], etc
 
 class Parser:
 	LOOKUP = {}
@@ -96,7 +100,7 @@ class Parser:
 					for i in xrange(1, len(new)):
 						token = new[i]
 						if isinstance(token, last.absorbs):
-							if isinstance(token, Expression):
+							if isinstance(token, BaseExpression):
 								token = token.flatten()
 							
 							last.absorb(token)
@@ -124,9 +128,20 @@ class Parser:
 				self.inc()
 				continue
 			elif char in '([{':
-				self.stack.append(Bracketed(char))
-				self.inc()
-				continue
+				if char == '(':
+					cls =  ParenExpr
+				elif char == '[':
+					if self.more(self.pos+1) and self.source[self.pos+1].isalpha():
+						result = self.matrix()
+					else:
+						cls = MatrixExpr
+				elif char == '{':
+					cls = ListExpr
+				
+				if result is None:
+					self.stack.append(cls(char))
+					self.inc()
+					continue
 			elif char in ')]}':
 				if self.stack:
 					stacks = []
@@ -134,30 +149,35 @@ class Parser:
 					for i in xrange(l):
 						stack = self.stack.pop(l-i-1)
 						if isinstance(stack, Bracketed):
-							if stack.end == char:
+							if stack.close(char):
 								for s in stacks:
 									stack.append(s)
 
-								if not isinstance(stack, Arguments):
+								if not isinstance(stack, FunctionArgs):
 									result = stack
-									
+								
 								stack.finish()
 								self.inc()
 								break
-							else:
+							elif char != stack.end:
 								self.error('tried to end \'%s\' with: "%s" (expecting "%s")' % (stack, char, stack.end))
+							else:
+								stacks.append(stack)
 						else:
 							stacks.append(stack)
 				else:
 					self.error('encountered "%s" but we have no expression on the stack to terminate' % char)
 			elif char == ',':
-				line = self.lines[-1]
-				if len(self.stack) > 1 and isinstance(self.stack[-2], Tuple):
+				if len(self.stack) > 1 and isinstance(self.stack[-2], Tuple)\
+						and not isinstance(self.stack[-1], Tuple):
 					expr = self.stack.pop()
 					self.stack[-1].append(expr)
 				elif self.stack and isinstance(self.stack[-1], Tuple):
 					pass
+				elif self.stack:
+					raise ParseError('comma encountered with an unclosed non-tuple expression on the stack')
 				else:
+
 					if self.lines[-1]:
 						token = self.lines[-1].pop()
 					else:
@@ -167,13 +187,15 @@ class Parser:
 					tup.append(token)
 					self.stack.append(tup)
 				
-				if isinstance(self.stack[-1], Arguments):
+				if isinstance(self.stack[-1], FunctionArgs):
 					self.stack.append(Expression())
 
 				self.inc()
 				continue
 			elif '0' <= char <= '9'	or isinstance(self.token(sub=True, inc=False), tokens.Minus) and self.number(test=True):
 				result = tokens.Value(self.number())
+			elif char in u'l∟' and self.more(self.pos+1) and self.source[self.pos+1].isalnum():
+				result = self.list()
 			elif char.isalpha():
 				result = self.token()
 			elif char in self.SYMBOLS:
@@ -183,15 +205,24 @@ class Parser:
 			else:
 				self.error('could not tokenize: %s' % repr(char))
 
-			if isinstance(result, tokens.Store):
+			if isinstance(result, tokens.Stor):
 				self.close_brackets()
 
 			if result is not None:
 				self.add(result)
 
-			# functions push the stack into argument mode
+			argument = False
 			if isinstance(result, tokens.Function):
-				args = Arguments('(')
+				argument = True
+
+			if isinstance(result, (tokens.List, tokens.Matrix)):
+				if self.more() and self.source[self.pos] == '(':
+					self.inc()
+					argument = True
+
+			# we were told to push the stack into argument mode
+			if argument:
+				args = FunctionArgs('(')
 				self.stack.append(args)
 				self.stack.append(Expression())
 				result.absorb(args)
@@ -204,7 +235,7 @@ class Parser:
 		if self.stack:
 			stack = self.stack[-1]
 			stack.append(token)
-		elif not isinstance(token, Arguments):
+		elif not isinstance(token, FunctionArgs):
 			while self.line >= len(self.lines):
 				self.lines.append([])
 
@@ -226,7 +257,6 @@ class Parser:
 			else:
 				# a second time to throw the error
 				self.token()
-
 	
 	def token(self, sub=False, inc=True):
 		remaining = self.source[self.pos:]
@@ -298,3 +328,29 @@ class Parser:
 
 		return ret
 
+	def alnum(self):
+		ret = ''
+		while self.more():
+			char = self.source[self.pos]
+			if char.isalnum():
+				ret += char
+				self.inc()
+			else:
+				break
+
+		return ret
+
+	def list(self):
+		self.inc()
+		name = self.alnum()
+
+		return tokens.List(name)
+
+	def matrix(self):
+		self.inc()
+		name = self.alnum()
+
+		assert self.more() and self.source[self.pos] == ']'
+		self.inc()
+
+		return tokens.Matrix(name)

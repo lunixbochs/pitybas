@@ -9,32 +9,44 @@ class Base:
 	can_get = True
 	absorbs = ()
 
+	end = None
+
 	def __init__(self):
-		self.tokens = []
+		self.contents = []
 		self.finished = False
 	
 	def append(self, token):
-		if self.tokens:
+		if self.contents:
+			prev = self.contents[-1]
+
+			# absorb: tokens can absorb the next token from the expression if it matches a list of types
+			if isinstance(token, prev.absorbs):
+				if isinstance(token, Base):
+					token = token.flatten()
+
+				prev.absorb(token)
+				return
+
 			# implied multiplication
-			if self.tokens[-1].priority == token.priority == tokens.Pri.NONE:
+			elif prev.priority == token.priority == tokens.Pri.NONE:
 
 				# negative numbers actually have implied addition
 				if isinstance(token, tokens.Value)\
 					and test_number(token.value) and int(token.value) < 0:
-						self.tokens.append(tokens.Plus())
+						self.contents.append(tokens.Plus())
 				else:
-					self.tokens.append(tokens.Mult())
+					self.contents.append(tokens.Mult())
 
-		self.tokens.append(token)
+		self.contents.append(token)
 	
 	def extend(self, array):
 		for x in array:
 			self.append(x)
 	
 	def flatten(self):
-		if len(self.tokens) == 1:
-			first = self.tokens[0]
-			if isinstance(first, Expression):
+		if len(self.contents) == 1:
+			first = self.contents[0]
+			if isinstance(first, Base):
 				return first.flatten()
 			elif first.can_get:
 				return first
@@ -43,23 +55,23 @@ class Base:
 
 	def fill(self):
 		# TODO: instead of this system, perhaps tokens should be able to specify whether they need/want left/right params
-		if not self.tokens: return
+		if not self.contents: return
 
 		# if we don't have a proper variable:token:variable pairing in the token list,
 		# this method will allow tokens to fill in an implied variable to their left or right
 		new = []
-		for i in xrange(len(self.tokens)):
-			t = self.tokens[i]
+		for i in xrange(len(self.contents)):
+			t = self.contents[i]
 			if (i % 2 == 0 and not t.can_get):
 				left = None
 				right = None
 
 				if i > 0:
-					left = self.tokens[i-1]
+					left = self.contents[i-1]
 					if not left.can_fill_right:
 						left = None
 
-				right = self.tokens[i]
+				right = self.contents[i]
 				if not right.can_fill_left:
 					right = None
 
@@ -81,26 +93,26 @@ class Base:
 			if last.can_fill_right:
 				new.append(last.fill_right())
 
-		self.tokens = new
+		self.contents = new
 
 	def validate(self):
-		if not self.tokens: return
+		if not self.contents: return
 
 		# figure out how to handle in-place tokens like the symbol for ^3
 		# perhaps replace it with a ^3 so we can enforce (value, token, value)
 		# or we can pad "in-place" tokens with a null to be passed as right
 
 		# make sure expression is ordered (value, token, value, token, value)
-		for i in xrange(len(self.tokens)):
-			t = self.tokens[i]
+		for i in xrange(len(self.contents)):
+			t = self.contents[i]
 			
 			if (i % 2 == 0 and not t.can_get) or ( i % 2 == 1 and not t.can_run):
 				raise ExpressionError('bad token order: %s' % self)
 
 		# determine whether we have any tokens after a ->
 		found_stor = False
-		for i in xrange(len(self.tokens)):
-			t = self.tokens[i]
+		for i in xrange(len(self.contents)):
+			t = self.contents[i]
 			odd = i % 2
 
 			if isinstance(t, tokens.Store):
@@ -116,8 +128,8 @@ class Base:
 
 		order = {}
 
-		for i in xrange(len(self.tokens)):
-			token = self.tokens[i]
+		for i in xrange(len(self.contents)):
+			token = self.contents[i]
 			p = token.priority
 			if p >= 0:
 				# anything below zero is to be ignored
@@ -137,7 +149,7 @@ class Base:
 		self.validate()
 
 		sub = []
-		expr = self.tokens[:]
+		expr = self.contents[:]
 		for i in self.order():
 			n = 0
 			for s in sub:
@@ -157,12 +169,22 @@ class Base:
 	
 	def finish(self):
 		self.finished = True
+
+	def close(self, char):
+		for stack in reversed(self.contents):
+			if isinstance(stack, Base):
+				if stack.close(char):
+					return False
+
+		if char == self.end and not self.finished:
+			self.finish()
+			return True
 	
 	def __len__(self):
-		return len(self.tokens)
+		return len(self.contents)
 
 	def __repr__(self):
-		return 'E(%s)' % (' '.join(repr(token) for token in self.tokens))
+		return 'E(%s)' % (' '.join(repr(token) for token in self.contents))
 
 bracket_map = {'(':')', '{':'}', '[':']'}
 
@@ -172,17 +194,23 @@ class Bracketed(Base):
 	def __init__(self, end):
 		self.end = bracket_map[end]
 		Base.__init__(self)
+	
+	def __repr__(self):
+		return 'B(%s)' % (' '.join(repr(token) for token in self.contents))
+
+class ParenExpr(Bracketed):
+	end = ')'
 
 class Tuple(Base):
 	priority = Pri.INVALID
 
 	def __init__(self):
-		self.contents = []
 		Base.__init__(self)
 	
 	def append(self, expr):
-		if isinstance(expr, Expression):
+		if isinstance(expr, Base):
 			expr = expr.flatten()
+
 		self.contents.append(expr)
 	
 	def get(self, vm):
@@ -196,8 +224,25 @@ class Tuple(Base):
 
 class Arguments(Tuple, Bracketed):
 	def __init__(self, end):
-		self.contents = []
 		Bracketed.__init__(self, end)
 	
 	def __repr__(self):
 		return 'A(%s)' % (', '.join(repr(expr) for expr in self.contents))
+
+class FunctionArgs(Arguments):
+	end = ')'
+
+class ListExpr(Arguments):
+	priority = Pri.NONE
+	end = '}'
+
+	def __repr__(self):
+		return 'L{%s}' % (', '.join(repr(expr) for expr in self.contents))
+
+class MatrixExpr(Arguments):
+	priority = Pri.NONE
+	end = ']'
+
+	def __repr__(self):
+		return 'M[%s]' % (', '.join(repr(expr) for expr in self.contents))
+
