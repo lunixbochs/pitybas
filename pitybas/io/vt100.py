@@ -2,6 +2,7 @@ from pitybas.parse import Parser
 from pitybas.common import ParseError
 
 import sys, tty, termios
+import select
 
 keycodes = {
 	'left': 24,
@@ -148,6 +149,10 @@ class VT:
 		with SafeIO(fd):
 			tty.setraw(fd)
 
+			ins, _, _ = select.select([sys.stdin], [], [], 0.1)
+			if not ins:
+				return
+
 			ch = sys.stdin.read(1)
 			if ch == '\003':
 				raise KeyboardInterrupt
@@ -258,3 +263,4 @@ class IO:
 				return label
 			else:
 				print 'invalid choice'
+
