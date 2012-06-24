@@ -85,7 +85,10 @@ class VT:
 	
 	def flush(self):
 		self.clear(reset=False)
-		sys.stdout.write('\n'.join(''.join(line) for line in self.lines))
+		data = '\n'.join(''.join(line) for line in self.lines)
+		sys.stdout.write(
+			data.encode(sys.stdout.encoding, 'replace')
+		)
 	
 	def move(self, row, col):
 		self.row, self.col = row, col
@@ -120,6 +123,7 @@ class VT:
 
 			for char in line:
 				self.lines[row-1][col-1] = char
+				char = char.encode(sys.stdout.encoding, 'replace')
 				sys.stdout.write(char)
 				col += 1
 			
