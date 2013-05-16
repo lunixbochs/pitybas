@@ -37,5 +37,5 @@ class Pri:
     BOOL = 5
     SET = 6
 
-def test_number(num):
+def is_number(num):
     return str(num).lstrip('-').replace('.', '', 1).isdigit()

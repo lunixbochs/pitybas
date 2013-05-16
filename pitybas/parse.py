@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import tokens
-from common import ParseError, test_number
+from common import ParseError, is_number
 from expression import Expression, Bracketed, FunctionArgs, Tuple, ParenExpr, ListExpr, MatrixExpr
 from expression import Base as BaseExpression
 
@@ -296,7 +296,7 @@ class Parser:
 
         if inc and not test: self.pos = pos
 
-        if test_number(num):
+        if is_number(num):
             if test: return True
             try:
                 n = int(num)

@@ -1,5 +1,5 @@
 import tokens
-from common import ExpressionError, Pri, test_number
+from common import ExpressionError, Pri, is_number
 
 class Base:
     priority = Pri.NONE
@@ -41,7 +41,7 @@ class Base:
 
                 # negative numbers actually have implied addition
                 if isinstance(token, tokens.Value)\
-                    and test_number(token.value) and int(token.value) < 0:
+                    and is_number(token.value) and int(token.value) < 0:
                         self.contents.append(tokens.Plus())
                 else:
                     self.contents.append(tokens.Mult())
