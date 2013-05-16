@@ -104,7 +104,7 @@ class VT:
 
     def flush(self):
         self.clear(reset=False)
-        data = '\n'.join(''.join(line) for line in self.lines)
+        data = '\n'.join(''.join(line) for line in self.lines) + '\n'
         sys.stdout.write(
             data.encode(sys.stdout.encoding, 'replace')
         )
