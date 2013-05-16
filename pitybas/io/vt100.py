@@ -1,8 +1,11 @@
 from pitybas.parse import Parser
 from pitybas.common import ParseError
 
-import sys, tty, termios
 import select
+import sys
+import termios
+import time
+import tty
 
 keycodes = {
     'left': 24,
@@ -41,6 +44,21 @@ keycodes = {
     '?': 104,
     'enter': 105
 }
+
+class Delayed:
+    '''
+    ensure at least duration time between __enter__ and __exit__
+    '''
+    def __init__(self, duration):
+        self.duration = duration
+
+    def __enter__(self):
+        self.start = time.time()
+
+    def __exit__(self, *args):
+        diff = self.duration - (time.time() - self.start)
+        if diff > 0:
+            time.sleep(diff)
 
 class SafeIO:
     def __init__(self, fd):
@@ -149,7 +167,8 @@ class VT:
         with SafeIO(fd):
             tty.setraw(fd)
 
-            ins, _, _ = select.select([sys.stdin], [], [], 0.1)
+            with Delayed(0.1):
+                ins, _, _ = select.select([sys.stdin], [], [], 0.1)
             if not ins:
                 return
 
