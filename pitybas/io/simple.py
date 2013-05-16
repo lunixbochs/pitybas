@@ -7,7 +7,7 @@ class IO:
 
     def __enter__(self):
         return self
-    
+
     def __exit__(self, *args):
         pass
 
@@ -39,11 +39,11 @@ class IO:
 
     def disp(self, msg=''):
         print msg
-    
+
     def pause(self, msg=''):
         if msg: self.disp(msg)
         self.input('[press enter]', True)
-    
+
     def menu(self, menu):
         # menu is a tuple of (title, (desc, label)),
         lookup = []
@@ -56,7 +56,7 @@ class IO:
                     print '%i: %s' % (i, self.vm.get(name))
                     lookup.append(label)
                     i += 1
-                
+
             choice = self.input('choice?', True)
             print
             if choice.isdigit() and 0 < int(choice) <= len(lookup):

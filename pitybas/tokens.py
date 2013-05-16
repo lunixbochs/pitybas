@@ -14,7 +14,7 @@ def add_class(name, *args, **kwargs):
 def get(f):
     def run(self, vm, left, right):
         return f(self, vm, vm.get(left), vm.get(right))
-    
+
     return run
 
 # magic classes
@@ -23,7 +23,7 @@ class Tracker(type):
     def __new__(self, name, bases, attrs):
         if not 'token' in attrs:
             attrs['token'] = name
-        
+
         attrs.update({
             'can_run': False,
             'can_get': False,
@@ -36,19 +36,19 @@ class Tracker(type):
 
         if 'run' in dir(cls):
             cls.can_run = True
-        
+
         if 'get' in dir(cls):
             cls.can_get = True
-        
+
         if 'set' in dir(cls):
             cls.can_set = True
 
         if 'fill_left' in dir(cls):
             cls.can_fill_left = True
-        
+
         if 'fill_right' in dir(cls):
             cls.can_fill_right = True
-        
+
         return cls
 
     def __init__(cls, name, bases, attrs):
@@ -65,10 +65,10 @@ class Parent:
     def add(cls, sub, name, attrs):
         if 'token' in attrs:
             name = attrs['token']
-        
+
         if name and not cls == Parent:
             cls.tokens[name] = sub
-    
+
     can_run = False
     can_get = False
     can_set = False
@@ -113,7 +113,7 @@ class Token(Parent):
 
     def run(self, vm):
         raise NotImplementedError
-    
+
     def __repr__(self):
         if self.arg:
             return '%s %s' % (repr(self.token), repr(self.arg))
@@ -140,7 +140,7 @@ class Function(Parent):
     def add(cls, sub, name, attrs):
         if 'token' in attrs:
             name = attrs['token']
-        
+
         if name:
             name += '('
             cls.tokens[name] = sub
@@ -153,7 +153,7 @@ class Function(Parent):
 
     def get(self, vm):
         raise NotImplementedError
-    
+
     def __repr__(self):
         if self.arg:
             return '%s%s' % (repr(self.token), repr(self.arg).replace('A', '', 1))
@@ -199,7 +199,7 @@ class List(Variable, Stub):
     def __init__(self, name=None):
         self.name = name
         super(List, self).__init__()
-    
+
     def get(self, vm):
         if self.arg:
             arg = vm.get(self.arg)[0]
@@ -207,7 +207,7 @@ class List(Variable, Stub):
             return vm.get_list(self.name)[arg-1]
 
         return vm.get_list(self.name)
-    
+
     def set(self, vm, value):
         if self.arg:
             arg = vm.get(self.arg)[0]
@@ -222,7 +222,7 @@ class List(Variable, Stub):
             vm.set_list(self.name, value)
 
         return value
-    
+
     def __repr__(self):
         if self.arg:
             return 'l%s(%s)' % (self.name, self.arg)
@@ -237,15 +237,15 @@ class Matrix(Variable, Stub):
 
     def __init__(self, name=None):
         self.name = name
-    
+
     def get(self, vm):
         if self.arg:
             arg = vm.get(self.arg)
             assert isinstance(arg, list) and len(arg) == 2
             return vm.get_matrix(self.name)[arg[0]-1][arg[1]-1]
-        
+
         return vm.get_matrix(self.name)
-    
+
     def set(self, vm, value):
         if self.arg:
             arg = vm.get(self.arg)
@@ -257,9 +257,9 @@ class Matrix(Variable, Stub):
         else:
             assert isinstance(value, list)
             vm.set_matrix(self.name, value)
-        
+
         return value
-    
+
     def __repr__(self):
         return '[%s]' % self.name
 
@@ -274,7 +274,7 @@ class dim(Function):
         elif isinstance(arg, Matrix):
             arg = vm.get(arg)
             return [len(arg), len(arg[0])]
-    
+
     def set(self, vm, value):
         assert self.arg and len(self.arg) == 1
 
@@ -300,15 +300,15 @@ class dim(Function):
                 m = vm.get_matrix(name)
             except KeyError:
                 m = [[]]
-            
+
             m = m[:a]
             for i in xrange(len(m), a):
                 n = ([0] * b)
                 m.append(n)
-            
+
             m = [l[:b] + ([0] * (b - len(l))) for l in m]
             vm.set_matrix(name, m)
-        
+
         return value
 
 class Fill(Function):
@@ -330,9 +330,9 @@ class Fill(Function):
                 c = []
                 for b in a:
                     c.append(num)
-                
+
                 m.append(c)
-            
+
             var.set(vm, m)
 
 class Ans(Const):
@@ -398,7 +398,7 @@ class MathFunction(Function, Stub):
     def get(self, vm):
         args = vm.get(self.arg)
         return self.call(vm, args)
-    
+
     def call(self, vm, arg): raise NotImplementedError
 
 # a MathFunction expecting a single Expression as the argument
@@ -466,7 +466,7 @@ class sqrt(Sqrt): pass
 
 class CubeRoot(MathExprFunction):
     token = u'³√'
-    
+
     def call(self, vm, arg):
         # TODO: proper accuracy. maybe write a numpy addon, to increase accuracy if numpy is installed?
 
@@ -636,7 +636,7 @@ class Factorial(Exponent):
 class rand(Variable):
     def get(self, vm):
         return random.random()
-    
+
     def set(self, vm, value):
         random.seed(value)
 
@@ -651,7 +651,7 @@ class randInt(MathFunction):
 
         if len(args) == 2:
             args.append(1)
-        
+
         return random.randint(*args)
 
 class randNorm(MathFunction):
@@ -662,7 +662,7 @@ class randNorm(MathFunction):
             args, n = args[:2], args[2]
         else:
             n = 1
-        
+
         return [random.normalvariate(*args) for i in xrange(n)]
 
 class randBin(MathFunction):
@@ -719,7 +719,7 @@ class NotEqualsToken(NotEquals):
 
 class LessThan(Logic):
     token = '<'
-    
+
     def bool(self, left, right):
         return left < right
 
@@ -790,7 +790,7 @@ class If(Block):
         if isinstance(cur, Then):
             vm.push_block()
             vm.inc()
-                
+
             if not true:
                 end = self.find_end(vm, or_else=True)
                 if end:
@@ -878,9 +878,9 @@ class For(Loop, Function):
                 forward = False
             else:
                 inc = 1
-            
+
             start, end = args
-            
+
             if self.pos is None:
                 self.pos = start
             else:
@@ -935,9 +935,9 @@ class Lbl(StubToken):
             label = arg.token
         elif isinstance(arg, Expression):
             label = ''.join([a.token for a in arg.contents if not isinstance(a, Mult)])
-        
+
         return label
-    
+
     def get_label(self, vm):
         return Lbl.guess_label(vm, self.arg)
 
@@ -945,7 +945,7 @@ class Goto(Token):
     absorbs = (Expression, Value)
     def run(self, vm):
         Goto.goto(vm, self.arg)
-    
+
     @staticmethod
     def goto(vm, token):
         label = Lbl.guess_label(vm, token)
@@ -954,7 +954,7 @@ class Goto(Token):
                 if token.get_label(vm) == label:
                     vm.goto(row, col)
                     return
-                    
+
         raise ExecutionError('could not find a label to Goto: %s' % token)
 
 class Menu(Function):
@@ -1019,7 +1019,7 @@ class Disp(Token):
             return
 
         self.disp(vm, vm.get(cur))
-    
+
     def disp(self, vm, msgs=None):
         if isinstance(msgs, (tuple, list)):
             for msg in msgs:
@@ -1044,7 +1044,7 @@ class Output(Function):
 
 class Prompt(Token):
     absorbs = (Expression, Variable, Tuple)
-    
+
     def run(self, vm):
         if not self.arg:
             raise ExecutionError('%s used without arguments')
@@ -1083,7 +1083,7 @@ class Input(Token):
             is_str = True
         else:
             is_str = False
-        
+
         val = vm.io.input(msg, is_str)
         var.set(vm, val)
 

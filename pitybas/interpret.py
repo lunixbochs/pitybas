@@ -10,7 +10,7 @@ class Interpreter:
     def from_string(cls, string, *args, **kwargs):
         code = Parser(string).parse()
         return Interpreter(code, *args, **kwargs)
-    
+
     @classmethod
     def from_file(cls, filename, *args, **kwargs):
         string = open(filename, 'r').read().decode('utf8')
@@ -34,7 +34,7 @@ class Interpreter:
         self.lists = {}
         self.matrix = {}
         self.fixed = -1
-    
+
     def cur(self):
         return self.code[self.line][self.col]
 
@@ -50,26 +50,26 @@ class Interpreter:
         self.line = min(self.line+1, len(self.code)-1)
         self.expression = None
         return self.cur()
-    
+
     def get_var(self, var):
         return self.vars[var]
-    
+
     def set_var(self, var, value):
         if isinstance(value, (Value, Base)):
             value = value.get(self)
 
         self.vars[var] = value
         return value
-    
+
     def get_matrix(self, name):
         return self.matrix[name]
-    
+
     def set_matrix(self, name, value):
         self.matrix[name] = value
-    
+
     def get_list(self, name):
         return self.lists[name]
-    
+
     def set_list(self, name, value):
         self.lists[name] = value
 
@@ -87,7 +87,7 @@ class Interpreter:
             return self.blocks.pop()
         else:
             raise ExecutionError('tried to pop an empty block stack')
-    
+
     def find(self, *types, **kwargs):
         if 'wrap' in kwargs:
             wrap = kwargs['wrap']
@@ -98,7 +98,7 @@ class Interpreter:
             pos = kwargs['pos']
         else:
             pos = self.line
-        
+
         def y(i):
             line = self.code[i]
             if line:
@@ -109,12 +109,12 @@ class Interpreter:
         for i in xrange(pos, len(self.code)):
             ret = y(i)
             if ret: yield ret
-        
+
         if wrap:
             for i in xrange(0, pos):
                 ret = y(i)
                 if ret: yield ret
-    
+
     def goto(self, row, col):
         if row >= 0 and row < len(self.code)\
             and col >= 0 and col < len(self.code[row]):
@@ -130,7 +130,7 @@ class Interpreter:
             if isinstance(val, complex):
                 if not val.imag:
                     val = val.real
-            
+
             if isinstance(val, (float)):
                 # TODO: perhaps limit precision here
                 i = int(val)
@@ -143,7 +143,7 @@ class Interpreter:
             return ret[0]
 
         return ret
-    
+
     def disp_round(self, num):
         if not isinstance(num, (int, float, complex)):
             return num
@@ -182,5 +182,5 @@ class Interpreter:
                 if e.message:
                     print
                     print 'Returned:', e.message
-        
+
         print

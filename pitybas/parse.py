@@ -31,11 +31,11 @@ class Parser:
         self.lines = []
 
         self.stack = []
-    
+
     @staticmethod
     def parse_line(vm, line):
         if not line: return
-        
+
         parser = Parser(line)
         parser.TOKENS = parser.VARIABLES + parser.FUNCTIONS
 
@@ -48,17 +48,17 @@ class Parser:
 
     def clean(self):
         self.source = self.source.replace('\r\n', '\n').replace('\r', '\n')
-    
+
     def error(self, msg):
         raise ParseError(msg)
-    
+
     def inc(self, n=1):
         self.pos += n
-    
+
     def more(self, pos=None):
         if pos is None: pos = self.pos
         return pos < self.length
-    
+
     def post(self):
         for line in self.lines:
             if line:
@@ -74,10 +74,10 @@ class Parser:
 
                         expr = None
                         new.append(token)
-                
+
                 if expr:
                     new.append(expr)
-                
+
                 if new:
                     # implied expressions need to be added to tuples in their entirety, instead of just their last element
                     pops = []
@@ -99,12 +99,12 @@ class Parser:
                         if isinstance(token, last.absorbs):
                             if isinstance(token, BaseExpression):
                                 token = token.flatten()
-                            
+
                             last.absorb(token)
                             pops.append(i)
-                        
+
                         last = token
-                    
+
                     for p in reversed(sorted(pops)):
                         new.pop(p)
 
@@ -134,7 +134,7 @@ class Parser:
                         cls = MatrixExpr
                 elif char == '{':
                     cls = ListExpr
-                
+
                 if result is None:
                     self.stack.append(cls(char))
                     self.inc()
@@ -152,7 +152,7 @@ class Parser:
 
                                 if not isinstance(stack, FunctionArgs):
                                     result = stack
-                                
+
                                 stack.finish()
                                 self.inc()
                                 break
@@ -183,7 +183,7 @@ class Parser:
                     tup = Tuple()
                     tup.append(token)
                     self.stack.append(tup)
-                
+
                 if isinstance(self.stack[-1], FunctionArgs):
                     self.stack.append(Expression())
 
@@ -227,7 +227,7 @@ class Parser:
 
         self.close_brackets()
         return [line for line in self.post()]
-    
+
     def add(self, token):
         # TODO: cannot add Pri.INVALID unless there's no expr on the stack
         if self.stack:
@@ -238,7 +238,7 @@ class Parser:
                 self.lines.append([])
 
             self.lines[self.line].append(token)
-    
+
     def close_brackets(self):
         while self.stack:
             self.add(self.stack.pop())
@@ -255,7 +255,7 @@ class Parser:
             else:
                 # a second time to throw the error
                 self.token()
-    
+
     def token(self, sub=False, inc=True):
         remaining = self.source[self.pos:]
         for token in self.TOKENS:
@@ -267,7 +267,7 @@ class Parser:
             if not sub:
                 near = remaining[:8].split('\n',1)[0]
                 self.error('no token found at pos %i near "%s"' % (self.pos, repr(near)))
-    
+
     def number(self, dot=True, test=False, inc=True):
         num = ''
         first = True
@@ -302,12 +302,12 @@ class Parser:
                 n = int(num)
             except ValueError:
                 n = float(num)
-            
+
             return n
         else:
             if test: return False
             raise ParseError('invalid number ending at pos %i: %s' % (self.pos, num))
-    
+
     def string(self):
         ret = ''
         self.inc()
@@ -320,7 +320,7 @@ class Parser:
 
             elif char == '\n':
                 break
-            
+
             ret += char
             self.inc()
 

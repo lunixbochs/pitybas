@@ -13,39 +13,39 @@ keycodes = {
     'B': 42,
     'C': 43,
     'D': 51,
-    'E': 52, 
-    'F': 53, 
-    'G': 54, 
-    'H': 55, 
-    'I': 61, 
-    'J': 62, 
-    'K': 63, 
-    'L': 64, 
-    'M': 65, 
-    'N': 71, 
-    'O': 72, 
-    'P': 73, 
-    'Q': 74, 
-    'R': 75, 
-    'S': 81, 
-    'T': 82, 
-    'U': 83, 
-    'V': 84, 
-    'W': 85, 
-    'X': 91, 
+    'E': 52,
+    'F': 53,
+    'G': 54,
+    'H': 55,
+    'I': 61,
+    'J': 62,
+    'K': 63,
+    'L': 64,
+    'M': 65,
+    'N': 71,
+    'O': 72,
+    'P': 73,
+    'Q': 74,
+    'R': 75,
+    'S': 81,
+    'T': 82,
+    'U': 83,
+    'V': 84,
+    'W': 85,
+    'X': 91,
     'Y': 92,
     'Z': 93,
     '"': 95,
     ' ': 102,
     ':': 103,
     '?': 104,
-    'enter': 105 
+    'enter': 105
 }
 
 class SafeIO:
     def __init__(self, fd):
         self.fd = fd
-    
+
     def __enter__(self):
         self.old = termios.tcgetattr(self.fd)
 
@@ -60,10 +60,10 @@ class VT:
 
         self.row, self.col = 1, 1
         self.pos_stack = []
-    
+
     def push(self):
         self.pos_stack.append((self.row, self.col))
-    
+
     def pop(self):
         self.row, self.col = self.pos_stack.pop()
 
@@ -78,23 +78,23 @@ class VT:
             self.lines = []
             for i in xrange(self.height):
                 self.lines.append([' ']*self.width)
-    
+
     def scroll(self):
         self.lines.pop(0)
         self.lines.append([' ']*self.width)
         self.row = max(1, self.row - 1)
-    
+
     def flush(self):
         self.clear(reset=False)
         data = '\n'.join(''.join(line) for line in self.lines)
         sys.stdout.write(
             data.encode(sys.stdout.encoding, 'replace')
         )
-    
+
     def move(self, row, col):
         self.row, self.col = row, col
         self.e('[%i;%iH' % (row, col))
-    
+
     def wrap(self, msg):
         msg = unicode(msg)
         first = self.width - self.col + 1
@@ -103,9 +103,9 @@ class VT:
         while msg:
             lines.append(msg[:self.width])
             msg = msg[self.width:]
-        
+
         return lines
-    
+
     def write(self, msg, scroll=True):
         row, col = self.row, self.col
         self.e('[%i;%iH' % (row, col))
@@ -127,13 +127,13 @@ class VT:
                 char = char.encode(sys.stdout.encoding, 'replace')
                 sys.stdout.write(char)
                 col += 1
-            
+
             col = 1
             row += 1
             sys.stdout.write('\n')
-        
+
         self.row, self.col = row, col
-    
+
     def output(self, row, col, msg):
         self.e('7')
         old = self.row, self.col
@@ -156,7 +156,7 @@ class VT:
             ch = sys.stdin.read(1)
             if ch == '\003':
                 raise KeyboardInterrupt
-                
+
             if ch == '\033':
                 # control sequence
                 ch = sys.stdin.read(1)
@@ -170,20 +170,20 @@ class VT:
                         return 'right'
                     elif ch == 'D':
                         return 'left'
-            
+
                 return None
-            
+
             return ch
 
 class IO:
     def __init__(self, vm):
         self.vm = vm
         self.vt = VT()
-    
+
     def __enter__(self):
         self.vt.e('[?25l')
         return self
-    
+
     def __exit__(self, *args):
         self.vt.e('[?25h')
 
@@ -215,7 +215,7 @@ class IO:
             except ParseError:
                 print 'ERR:DATA'
                 print
-    
+
     def getkey(self):
         key = self.vt.getch()
         if key in keycodes:
@@ -232,11 +232,11 @@ class IO:
             msg = str(msg).rjust(16)
 
         self.vt.write(msg)
-    
+
     def pause(self, msg=''):
         if msg: self.disp(msg)
         self.input('[press enter]', True)
-    
+
     def menu(self, menu):
         # menu is a tuple of (title, (desc, label)),
         # TODO: implement this in VT terms
@@ -252,7 +252,7 @@ class IO:
                     print '%i: %s' % (i, self.vm.get(name))
                     lookup.append(label)
                     i += 1
-                
+
             self.vt.e('[?25h')
             choice = raw_input('choice? ')
             self.vt.e('[?25l')

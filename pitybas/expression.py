@@ -16,7 +16,7 @@ class Base:
     def __init__(self):
         self.contents = []
         self.finished = False
-    
+
     def append(self, token):
         if self.contents:
             prev = self.contents[-1]
@@ -45,13 +45,13 @@ class Base:
                         self.contents.append(tokens.Plus())
                 else:
                     self.contents.append(tokens.Mult())
-        
+
         self.contents.append(token)
-    
+
     def extend(self, array):
         for x in array:
             self.append(x)
-    
+
     def flatten(self):
         if len(self.contents) == 1:
             first = self.contents[0]
@@ -59,7 +59,7 @@ class Base:
                 return first.flatten()
             elif first.can_get:
                 return first
-        
+
         return self
 
     def fill(self):
@@ -114,7 +114,7 @@ class Base:
         # make sure expression is ordered (value, token, value, token, value)
         for i in xrange(len(self.contents)):
             t = self.contents[i]
-            
+
             if (i % 2 == 0 and not t.can_get) or ( i % 2 == 1 and not t.can_run):
                 raise ExpressionError('bad token order: %s' % self)
 
@@ -129,7 +129,7 @@ class Base:
                 stor_odd = odd
             elif found_stor and (odd == stor_odd):
                 raise ExpressionError('Store cannot be followed by non-Store tokens in expression: %s' % self)
-    
+
     def order(self):
         # this step returns a list of ordered indicies
         # to help reduce tokens to a single value
@@ -146,13 +146,13 @@ class Base:
                     order[p].append(i)
                 else:
                     order[p] = [i]
-        
+
         ret = []
         for p in order:
             ret += order[p]
-        
+
         return ret
-    
+
     def get(self, vm):
         self.fill()
         self.validate()
@@ -170,12 +170,12 @@ class Base:
 
             right = expr.pop(i+1)
             left = expr.pop(i-1)
-            
+
             token = expr[i-1]
             expr[i-1] = tokens.Value(token.run(vm, left, right))
 
         return vm.get(expr[0])
-    
+
     def finish(self):
         self.finished = True
 
@@ -188,7 +188,7 @@ class Base:
         if char == self.end and not self.finished:
             self.finish()
             return True
-    
+
     def __len__(self):
         return len(self.contents)
 
@@ -203,7 +203,7 @@ class Bracketed(Base):
     def __init__(self, end):
         self.end = bracket_map[end]
         Base.__init__(self)
-    
+
     def __repr__(self):
         return 'B(%s)' % (' '.join(repr(token) for token in self.contents))
 
@@ -215,26 +215,26 @@ class Tuple(Base):
 
     def __init__(self):
         Base.__init__(self)
-    
+
     def append(self, expr):
         if isinstance(expr, Base):
             expr = expr.flatten()
 
         self.contents.append(expr)
-    
+
     def get(self, vm):
         return [vm.get(arg) for arg in self.contents]
-    
+
     def __len__(self):
         return len(self.contents)
-    
+
     def __repr__(self):
         return 'T(%s)' % (', '.join(repr(expr) for expr in self.contents))
 
 class Arguments(Tuple, Bracketed):
     def __init__(self, end):
         Bracketed.__init__(self, end)
-    
+
     def __repr__(self):
         return 'A(%s)' % (', '.join(repr(expr) for expr in self.contents))
 
