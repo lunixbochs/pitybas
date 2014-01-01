@@ -1090,3 +1090,32 @@ class Input(Token):
 class getKey(Variable):
     def get(self, vm):
         return vm.io.getkey()
+
+class REPL(Token):
+    def run(self, vm):
+        from parse import Parser
+
+        if vm.repl_serial != vm.serial:
+            vm.repl_serial = vm.serial
+            ans = vm.vars.get('Ans')
+            if ans is not None:
+                vm.io.disp(vm.disp_round(ans))
+
+        code = None
+        repl_line = None
+        while not repl_line:
+            try:
+                repl_line = raw_input('>>> ')
+            except KeyboardInterrupt:
+                pass
+            except EOFError:
+                code = [[EOF()]]
+                break
+
+        if not code:
+            code = Parser(repl_line + '\n').parse()
+
+        for line in reversed(code):
+            vm.code.insert(self.line, line)
+
+        vm.line, vm.col = self.line, self.col

@@ -1,6 +1,6 @@
 import sys, traceback
 from optparse import OptionParser
-from interpret import Interpreter
+from interpret import Interpreter, Repl
 from common import Error
 from pitybas.io.vt100 import IO as vt100
 
@@ -12,7 +12,7 @@ parser.add_option('-i', '--io', dest="io", help="select an IO system: simple (de
 
 (options, args) = parser.parse_args()
 
-if len(args) != 1:
+if len(args) > 1:
     parser.print_help()
     sys.exit(1)
 
@@ -20,7 +20,12 @@ io = None
 if options.io == 'vt100':
     io = vt100
 
-vm = Interpreter.from_file(args[0], history=20, io=io)
+if args:
+    vm = Interpreter.from_file(args[0], history=20, io=io)
+else:
+    print 'Welcome to pitybas.'
+    print
+    vm = Repl(history=20, io=io)
 
 if options.verbose:
     print 'Token stream:'
@@ -40,11 +45,22 @@ def stacktrace(vm, num=None):
     for row, col, cur in vm.history[-num:]:
         print ('[%i, %i]:' % (row, col)).ljust(9), repr(cur).replace("u'", '').replace("'", '')
 
+    if vm.history:
+        print
+
+    print '-===[ Code (row {}, col {}) ]===-'.format(vm.line, vm.col)
+    h = num / 2
+    for i in xrange(max(vm.line - h, 0), min(vm.line + h, len(vm.code))):
+        line = vm.code[i]
+        print '{}: {}'.format(i, line)
+    print
+
     if options.vardump and vm.vars:
         print
         print '-===[ Variable Dump ]===-'
         import pprint
         pprint.pprint(vm.vars)
+        print
 
 try:
     vm.execute()

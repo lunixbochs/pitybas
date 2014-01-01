@@ -1,11 +1,13 @@
+import time
+
 from parse import Parser
-from tokens import EOF, Value
+from tokens import EOF, Value, REPL
 from common import ExecutionError, StopError, ReturnError
 
 from pitybas.io.simple import IO
 from expression import Base
 
-class Interpreter:
+class Interpreter(object):
     @classmethod
     def from_string(cls, string, *args, **kwargs):
         code = Parser(string).parse()
@@ -34,6 +36,9 @@ class Interpreter:
         self.lists = {}
         self.matrix = {}
         self.fixed = -1
+
+        self.serial = 0
+        self.repl_serial = 0
 
     def cur(self):
         return self.code[self.line][self.col]
@@ -157,6 +162,8 @@ class Interpreter:
         self.history.append((self.line, self.col, cur))
         self.history = self.history[-self.hist_len:]
 
+        cur.line, cur.col = self.line, self.col
+
         if cur.can_run:
             self.running.append((self.line, self.col, cur))
             self.inc()
@@ -165,6 +172,7 @@ class Interpreter:
         elif cur.can_get:
             self.inc()
             self.set_var('Ans', cur.get(self))
+            self.serial = time.time()
         else:
             raise ExecutionError('cannot seem to run token: %s' % cur)
 
@@ -184,3 +192,8 @@ class Interpreter:
                     print 'Returned:', e.message
 
         print
+
+class Repl(Interpreter):
+    def __init__(self, code=[], **kwargs):
+        super(Repl, self).__init__(code, **kwargs)
+        self.code.insert(-2, [REPL()])
