@@ -1,6 +1,7 @@
 import time
+import traceback
 
-from parse import Parser
+from parse import Parser, ParseError
 from tokens import EOF, Value, REPL
 from common import ExecutionError, StopError, ReturnError
 
@@ -197,3 +198,12 @@ class Repl(Interpreter):
     def __init__(self, code=[], **kwargs):
         super(Repl, self).__init__(code, **kwargs)
         self.code.insert(-2, [REPL()])
+
+    def execute(self):
+        while not isinstance(self.cur(), EOF):
+            try:
+                super(Repl, self).execute()
+            except ParseError, e:
+                print e
+            except:
+                print traceback.format_exc()

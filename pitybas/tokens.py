@@ -1093,7 +1093,7 @@ class getKey(Variable):
 
 class REPL(Token):
     def run(self, vm):
-        from parse import Parser
+        from parse import Parser, ParseError
 
         if vm.repl_serial != vm.serial:
             vm.repl_serial = vm.serial
@@ -1102,18 +1102,22 @@ class REPL(Token):
                 vm.io.disp(vm.disp_round(ans))
 
         code = None
-        repl_line = None
-        while not repl_line:
-            try:
-                repl_line = raw_input('>>> ')
-            except KeyboardInterrupt:
-                print
-            except EOFError:
-                code = [[EOF()]]
-                break
+        while not code:
+            repl_line = None
+            while not repl_line:
+                try:
+                    repl_line = raw_input('>>> ')
+                except KeyboardInterrupt:
+                    print
+                except EOFError:
+                    code = [[EOF()]]
+                    break
 
-        if not code:
-            code = Parser(repl_line + '\n').parse()
+            if not code:
+                try:
+                    code = Parser(repl_line + '\n').parse()
+                except ParseError, e:
+                    print e
 
         for line in reversed(code):
             vm.code.insert(self.line, line)
