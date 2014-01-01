@@ -30,14 +30,17 @@ if options.verbose:
     print '-===[ Running %s ]===-' % args[0]
 
 def stacktrace(vm, num=None):
-    if not num: num = vm.hist_len
+    if not num:
+        num = vm.hist_len
 
-    print
-    print '-===[ Stacktrace ]===-'
+    if vm.history:
+        print
+        print '-===[ Stacktrace ]===-'
+
     for row, col, cur in vm.history[-num:]:
         print ('[%i, %i]:' % (row, col)).ljust(9), repr(cur).replace("u'", '').replace("'", '')
 
-    if options.vardump:
+    if options.vardump and vm.vars:
         print
         print '-===[ Variable Dump ]===-'
         import pprint
