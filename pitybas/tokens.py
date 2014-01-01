@@ -1107,7 +1107,7 @@ class REPL(Token):
             try:
                 repl_line = raw_input('>>> ')
             except KeyboardInterrupt:
-                pass
+                print
             except EOFError:
                 code = [[EOF()]]
                 break
