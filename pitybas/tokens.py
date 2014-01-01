@@ -650,7 +650,7 @@ class randInt(MathFunction):
         assert len(args) in (2, 3)
 
         if len(args) == 2:
-            args.append(1)
+            return random.randint(*args)
 
         if args[0] > args[1]:
             args[0], args[1] = args[1], args[0]
