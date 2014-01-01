@@ -652,7 +652,7 @@ class randInt(MathFunction):
         if len(args) == 2:
             args.append(1)
 
-        return random.randint(*args)
+        return [random.randint(*args[:2]) for i in xrange(args[2])]
 
 class randNorm(MathFunction):
     def call(self, vm, args):
