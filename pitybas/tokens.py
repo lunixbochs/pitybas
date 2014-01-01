@@ -652,6 +652,9 @@ class randInt(MathFunction):
         if len(args) == 2:
             args.append(1)
 
+        if args[0] > args[1]:
+            args[0], args[1] = args[1], args[0]
+
         return [random.randint(*args[:2]) for i in xrange(args[2])]
 
 class randNorm(MathFunction):
