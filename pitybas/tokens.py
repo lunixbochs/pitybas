@@ -363,8 +363,15 @@ class StrVar(SimpleVar, Stub):
     def get(self, vm):
         return vm.get_var(self.token, '')
 
-class Theta(SimpleVar):
+class Theta(NumVar):
     token = u'\u03b8'
+
+class THETA(NumVar):
+    def set(self, vm, value):
+        return vm.set_var(Theta.token, value)
+
+    def get(self, vm):
+        return vm.get_var(Theta.token)
 
 for c in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ':
     add_class(c, NumVar)
