@@ -5,6 +5,7 @@ from common import Error
 from pitybas.io.vt100 import IO as vt100
 
 parser = OptionParser(usage='Usage: pb.py [options] filename')
+parser.add_option('-a', '--ast', dest="ast", action="store_true", help="parse, print ast, and quit")
 parser.add_option('-d', '--dump', dest="vardump", action="store_true", help="dump variables in stacktrace")
 parser.add_option('-s', '--stacktrace', dest="stacktrace", action="store_true", help="always stacktrace")
 parser.add_option('-v', '--verbose', dest="verbose", action="store_true", help="verbose output")
@@ -34,6 +35,14 @@ if options.verbose:
     print
     print '-===[ Running %s ]===-' % args[0]
 
+def print_ast(vm, start=0, end=None):
+    if end is None:
+        end = len(vm.code)
+
+    for i in xrange(max(start, 0), min(end, len(vm.code))):
+        line = vm.code[i]
+        print '{}: {}'.format(i, line)
+
 def stacktrace(vm, num=None):
     if not num:
         num = vm.hist_len
@@ -50,9 +59,7 @@ def stacktrace(vm, num=None):
 
     print '-===[ Code (row {}, col {}) ]===-'.format(vm.line, vm.col)
     h = num / 2
-    for i in xrange(max(vm.line - h, 0), min(vm.line + h, len(vm.code))):
-        line = vm.code[i]
-        print '{}: {}'.format(i, line)
+    print_ast(vm, vm.line - h, vm.line + h)
     print
 
     if options.vardump and vm.vars:
@@ -61,6 +68,10 @@ def stacktrace(vm, num=None):
         import pprint
         pprint.pprint(vm.vars)
         print
+
+if options.ast:
+    print_ast(vm)
+    sys.exit(0)
 
 try:
     vm.execute()
