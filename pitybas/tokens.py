@@ -355,17 +355,25 @@ class SimpleVar(Variable, Stub):
     def set(self, vm, value): return vm.set_var(self.token, value)
     def get(self, vm): return vm.get_var(self.token)
 
+class NumVar(SimpleVar, Stub):
+    def get(self, vm):
+        return vm.get_var(self.token, 0)
+
+class StrVar(SimpleVar, Stub):
+    def get(self, vm):
+        return vm.get_var(self.token, '')
+
 class Theta(SimpleVar):
     token = u'\u03b8'
 
 for c in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ':
-    add_class(c, SimpleVar)
+    add_class(c, NumVar)
 
 class Str(SimpleVar, Stub):
     pass
 
 for i in xrange(10):
-    add_class('Str%i' % i, SimpleVar)
+    add_class('Str%i' % i, StrVar)
 
 # operators
 

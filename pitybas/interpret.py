@@ -58,7 +58,9 @@ class Interpreter(object):
         self.expression = None
         return self.cur()
 
-    def get_var(self, var):
+    def get_var(self, var, default=None):
+        if var not in self.vars and default is not None:
+            return default
         return self.vars[var]
 
     def set_var(self, var, value):
