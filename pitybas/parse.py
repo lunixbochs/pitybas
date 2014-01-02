@@ -85,7 +85,7 @@ class Parser:
                         e, t = new[i], new[i+1]
                         if isinstance(e, Expression) and isinstance(t, Tuple):
                             pops.append(i)
-                            e.append(t.contents[0])
+                            e.append(t.contents[0].flatten())
                             t.contents[0] = e
 
                     for p in reversed(sorted(pops)):
@@ -168,13 +168,14 @@ class Parser:
                 if len(self.stack) > 1 and isinstance(self.stack[-2], Tuple)\
                         and not isinstance(self.stack[-1], Tuple):
                     expr = self.stack.pop()
-                    self.stack[-1].append(expr)
+                    tup = self.stack[-1]
+                    tup.append(expr)
+                    tup.sep()
                 elif self.stack and isinstance(self.stack[-1], Tuple):
-                    pass
+                    self.stack[-1].sep()
                 elif self.stack:
                     raise ParseError('comma encountered with an unclosed non-tuple expression on the stack')
                 else:
-
                     if self.lines[-1]:
                         token = self.lines[-1].pop()
                     else:
@@ -183,6 +184,7 @@ class Parser:
                     tup = Tuple()
                     tup.append(token)
                     self.stack.append(tup)
+                    tup.sep()
 
                 if isinstance(self.stack[-1], FunctionArgs):
                     self.stack.append(Expression())

@@ -13,10 +13,13 @@ class Base:
 
     end = None
 
-    def __init__(self):
+    def __init__(self, *elements):
         self.contents = []
         self.raw = []
         self.finished = False
+
+        for e in elements:
+            self.append(e)
 
     def append(self, token):
         if self.contents:
@@ -202,7 +205,10 @@ class Base:
 
 bracket_map = {'(':')', '{':'}', '[':']'}
 
-class Expression(Base): pass
+class Expression(Base):
+    def set(self, vm, value):
+        if len(self.contents) == 1:
+            self.contents[0].set(vm, value)
 
 class Bracketed(Base):
     def __init__(self, end):
@@ -225,7 +231,18 @@ class Tuple(Base):
         if isinstance(expr, Base):
             expr = expr.flatten()
 
+        if self.contents:
+            last = self.contents[-1]
+            if isinstance(last, Base) and not last.finished:
+                last.append(expr)
+                return
+
+        expr = Expression(expr)
         self.contents.append(expr)
+
+    def sep(self):
+        if self.contents:
+            self.contents[-1].finish()
 
     def get(self, vm):
         return [vm.get(arg) for arg in self.contents]
@@ -234,7 +251,13 @@ class Tuple(Base):
         return len(self.contents)
 
     def __repr__(self):
-        return 'T(%s)' % (', '.join(repr(expr) for expr in self.contents))
+        def expr_repr(e):
+            if not isinstance(e, Expression):
+                return '({})'.format(e)
+            else:
+                return repr(e)
+
+        return 'T(%s)' % (', '.join(expr_repr(expr) for expr in self.contents))
 
 class Arguments(Tuple, Bracketed):
     def __init__(self, end):
