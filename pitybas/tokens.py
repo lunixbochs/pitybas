@@ -669,11 +669,11 @@ class randInt(MathFunction):
     def call(self, vm, args):
         assert len(args) in (2, 3)
 
-        if len(args) == 2:
-            return random.randint(*args)
-
         if args[0] > args[1]:
             args[0], args[1] = args[1], args[0]
+
+        if len(args) == 2:
+            return random.randint(*args)
 
         return [random.randint(*args[:2]) for i in xrange(args[2])]
 
