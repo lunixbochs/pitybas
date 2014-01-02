@@ -1,3 +1,4 @@
+from collections import defaultdict
 import time
 import traceback
 
@@ -34,7 +35,7 @@ class Interpreter(object):
         self.hist_len = history
 
         self.vars = {}
-        self.lists = {}
+        self.lists = defaultdict(list)
         self.matrix = {}
         self.fixed = -1
 
