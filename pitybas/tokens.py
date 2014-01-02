@@ -957,7 +957,7 @@ class Lbl(StubToken):
         elif isinstance(arg, Variable):
             label = arg.token
         elif isinstance(arg, Expression):
-            label = ''.join([a.token for a in arg.contents if not isinstance(a, Mult)])
+            label = str(arg)
 
         return str(label)
 

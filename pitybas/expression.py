@@ -15,6 +15,7 @@ class Base:
 
     def __init__(self):
         self.contents = []
+        self.raw = []
         self.finished = False
 
     def append(self, token):
@@ -46,6 +47,7 @@ class Base:
                 else:
                     self.contents.append(tokens.Mult())
 
+        self.raw.append(token)
         self.contents.append(token)
 
     def extend(self, array):
@@ -188,6 +190,9 @@ class Base:
         if char == self.end and not self.finished:
             self.finish()
             return True
+
+    def __str__(self):
+        return ''.join([a.token for a in self.raw])
 
     def __len__(self):
         return len(self.contents)
