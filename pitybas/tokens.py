@@ -400,8 +400,25 @@ class Operator(Token, Stub):
     def run(self, vm, left, right):
         return self.op(left, right)
 
+class FloatOperator(Operator, Stub):
+    @get
+    def run(self, vm, left, right):
+        # TODO: be smarter about when to coerce to float
+        if isinstance(left, int):
+            left = float(left)
+
+        if isinstance(right, int):
+            right = float(right)
+
+        ans = self.op(float(left), float(right))
+        # 14 digits of precision?
+        if abs(ans - int(ans)) < 0.00000000000001:
+            ans = int(ans)
+
+        return ans
+
 class AddSub(Operator, Stub): priority = Pri.ADDSUB
-class MultDiv(Operator, Stub): priority = Pri.MULTDIV
+class MultDiv(FloatOperator, Stub): priority = Pri.MULTDIV
 class Exponent(Operator, Stub): priority = Pri.EXPONENT
 class RightExponent(Exponent, Stub):
         def fill_right(self):
