@@ -959,7 +959,7 @@ class Lbl(StubToken):
         elif isinstance(arg, Expression):
             label = ''.join([a.token for a in arg.contents if not isinstance(a, Mult)])
 
-        return label
+        return str(label)
 
     def get_label(self, vm):
         return Lbl.guess_label(vm, self.arg)
