@@ -306,7 +306,10 @@ class Parser:
             return n
         else:
             if test: return False
-            raise ParseError('invalid number ending at pos %i: %s' % (self.pos, num))
+            lines = self.source[:pos]
+            line = lines.count('\n') + 1
+            col = max(self.pos - lines.rfind('\n'), 0)
+            raise ParseError('invalid number ending at {}:{}: {}'.format(line, col, num))
 
     def string(self):
         ret = ''
