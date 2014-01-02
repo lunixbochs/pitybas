@@ -215,7 +215,12 @@ class List(Variable, Stub):
             assert isinstance(value, (int, float, complex))
 
             l = vm.get_list(self.name)[:]
-            l[arg-1] = value
+            i = arg - 1
+
+            if i == len(l):
+                l.append(value)
+            else:
+                l[i] = value
             vm.set_list(self.name, l)
         else:
             assert isinstance(value, list)
