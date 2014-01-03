@@ -24,7 +24,7 @@ if options.io == 'vt100':
 if args:
     vm = Interpreter.from_file(args[0], history=20, io=io)
 else:
-    print 'Welcome to pitybas.'
+    print 'Welcome to pitybas. Press Ctrl-D to exit.'
     print
     vm = Repl(history=20, io=io)
 
