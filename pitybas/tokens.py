@@ -200,6 +200,20 @@ class List(Variable, Stub):
         self.name = name
         super(List, self).__init__()
 
+    def dim(self, vm, value=None):
+        if value is not None:
+            assert isinstance(value, int)
+
+            try:
+                l = vm.get_list(self.name)
+            except KeyError:
+                l = []
+
+            l = l[:value] + ([0] * (value - len(l)))
+            vm.set_list(self.name, l)
+        else:
+            return len(vm.get(self))
+
     def get(self, vm):
         if self.arg:
             arg = vm.get(self.arg)[0]
@@ -243,6 +257,27 @@ class Matrix(Variable, Stub):
     def __init__(self, name=None):
         self.name = name
 
+    def dim(self, vm, value=None):
+        if value is not None:
+            assert isinstance(value, list) and len(value) == 2
+
+            a, b = value
+            try:
+                m = vm.get_matrix(name)
+            except KeyError:
+                m = [[]]
+
+            m = m[:a]
+            for i in xrange(len(m), a):
+                n = ([0] * b)
+                m.append(n)
+
+            m = [l[:b] + ([0] * (b - len(l))) for l in m]
+            vm.set_matrix(name, m)
+        else:
+            val = vm.get(self.name)
+            return [len(val), len(val[0])]
+
     def get(self, vm):
         if self.arg:
             arg = vm.get(self.arg)
@@ -272,54 +307,25 @@ class dim(Function):
     def get(self, vm):
         assert self.arg and len(self.arg) == 1
 
-        arg = self.arg.contents[0]
+        arg = self.arg.contents[0].flatten()
         assert isinstance(arg, (List, Matrix))
-        if isinstance(arg, List):
-            return len(vm.get(arg))
-        elif isinstance(arg, Matrix):
-            arg = vm.get(arg)
-            return [len(arg), len(arg[0])]
+        return arg.dim(vm)
 
     def set(self, vm, value):
         assert self.arg and len(self.arg) == 1
 
-        arg = self.arg.contents[0]
+        arg = self.arg.contents[0].flatten()
         assert isinstance(arg, (List, Matrix))
         name = arg.name
 
-        if isinstance(arg, List):
-            assert isinstance(value, int)
-
-            try:
-                l = vm.get_list(name)
-            except KeyError:
-                l = []
-
-            l = l[:value] + ([0] * (value - len(l)))
-            vm.set_list(name, l)
-        elif isinstance(arg, Matrix):
-            assert isinstance(value, list) and len(value) == 2
-
-            a, b = value
-            try:
-                m = vm.get_matrix(name)
-            except KeyError:
-                m = [[]]
-
-            m = m[:a]
-            for i in xrange(len(m), a):
-                n = ([0] * b)
-                m.append(n)
-
-            m = [l[:b] + ([0] * (b - len(l))) for l in m]
-            vm.set_matrix(name, m)
-
+        arg.dim(vm, value)
         return value
 
 class Fill(Function):
     def run(self, vm):
         assert self.arg and len(self.arg) == 2
         num, var = self.arg.contents
+        var = var.flatten()
         num = vm.get(num)
 
         assert isinstance(num, (int, float, complex))
