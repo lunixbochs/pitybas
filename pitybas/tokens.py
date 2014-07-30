@@ -796,6 +796,32 @@ class GreaterOrEquals(Logic):
 class GreaterOrEqualsToken(GreaterOrEquals):
     token = u'≥'
 
+# string manipulation
+
+class inString(Function):
+    def call(self, vm, args):
+        assert len(args) == 2 or len(args) == 3 and isinstance(args[2], int)
+        assert isinstance(args[0], basestring) and isinstance(args[1], basestring)
+        haystack = args[0]
+        needle = args[1]
+        skip = 0
+        if len(args) == 3:
+            skip = args[2]
+        return haystack.find(needle, skip)
+
+class sub(Function):
+    def call(self, vm, args):
+        assert len(args) == 3
+        s = args[0]
+        a, b = args[1], args[2]
+        assert a > 0 and b < len(s)
+        return s[a:a + b]
+
+class length(Function):
+    def call(self, vm, args):
+        assert len(args) == 1
+        return len(args[0])
+
 # control flow
 
 class Block(StubToken):
