@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import fractions
 import math
 import random
 import string
@@ -543,8 +544,11 @@ class Abs(MathExprFunction):
 
 class gcd(MathFunction):
     def call(self, vm, args):
-        assert len(args) == 2
-        return gcd.gcd(*args)
+        assert len(args) == 1 and isinstance(args[0], list) or len(args) == 2
+        if len(args) == 1:
+            return reduce(lambda a, b: fractions.gcd(a, b), args[0])
+        else:
+            return fractions.gcd(*args)
 
     # TODO: list support
     @staticmethod
