@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-import math, random
+import math
+import random
+import string
 
 from common import Pri, ExecutionError, StopError, ReturnError
 from expression import Tuple, Expression, Arguments
@@ -1136,6 +1138,25 @@ class Input(Token):
 class getKey(Variable):
     def get(self, vm):
         return vm.io.getkey()
+
+class pgrm(Token):
+    done = False
+
+    def dynamic(self, char):
+        if not self.done and char in string.uppercase:
+            self.name += char
+            return True
+        self.done = True
+        return False
+
+    def __init__(self):
+        self.name = ''
+
+    def run(self, vm):
+        vm.run_pgrm(self.name)
+
+    def __repr__(self):
+        return 'pgrm' + self.name
 
 class REPL(Token):
     def run(self, vm):

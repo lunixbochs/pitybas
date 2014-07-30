@@ -114,8 +114,15 @@ class Parser:
         while self.more():
             char = self.source[self.pos]
             result = None
+            if self.lines and self.lines[-1]:
+                token = self.lines[-1][-1]
+            else:
+                token = None
 
-            if char in ('\n', ':'):
+            if token and hasattr(token, 'dynamic') and hasattr(token.dynamic, '__call__') and token.dynamic(char):
+                self.inc()
+                continue
+            elif char in ('\n', ':'):
                 self.close_brackets()
 
                 self.inc()

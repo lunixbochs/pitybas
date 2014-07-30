@@ -199,8 +199,6 @@ class Interpreter(object):
                     print
                     print 'Returned:', e.message
 
-        print
-
     def print_tokens(self):
         for line in self.code:
             print (', '.join(repr(n) for n in line)).replace("u'", "'")
@@ -244,6 +242,16 @@ class Interpreter(object):
             import pprint
             pprint.pprint(self.vars)
             print
+
+    def run_pgrm(self, name):
+        for ref in os.listdir('.'):
+            if ref.endswith('.bas'):
+                test = ref.rsplit('.', 1)[0]
+                if test.lower() == name.lower():
+                    sub = Interpreter.from_file(ref)
+                    sub.execute()
+                    return
+        raise ExecutionError('pgrm{} not found'.format(name))
 
 class Repl(Interpreter):
     def __init__(self, code=[], **kwargs):
