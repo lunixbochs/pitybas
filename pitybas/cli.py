@@ -29,45 +29,9 @@ else:
     vm = Repl(history=20, io=io)
 
 if options.verbose:
-    print 'Token stream:'
-    for line in vm.code:
-        print (', '.join(repr(n) for n in line)).replace("u'", "'")
+    vm.print_tokens()
     print
     print '-===[ Running %s ]===-' % args[0]
-
-def print_ast(vm, start=0, end=None):
-    if end is None:
-        end = len(vm.code)
-
-    for i in xrange(max(start, 0), min(end, len(vm.code))):
-        line = vm.code[i]
-        print '{}: {}'.format(i, line)
-
-def stacktrace(vm, num=None):
-    if not num:
-        num = vm.hist_len
-
-    if vm.history:
-        print
-        print '-===[ Stacktrace ]===-'
-
-    for row, col, cur in vm.history[-num:]:
-        print ('[%i, %i]:' % (row, col)).ljust(9), repr(cur).replace("u'", '').replace("'", '')
-
-    if vm.history:
-        print
-
-    print '-===[ Code (row {}, col {}) ]===-'.format(vm.line, vm.col)
-    h = num / 2
-    print_ast(vm, vm.line - h, vm.line + h)
-    print
-
-    if options.vardump and vm.vars:
-        print
-        print '-===[ Variable Dump ]===-'
-        import pprint
-        pprint.pprint(vm.vars)
-        print
 
 if options.ast:
     print_ast(vm)
@@ -76,15 +40,14 @@ if options.ast:
 try:
     vm.execute()
     if options.stacktrace:
-        print
-        stacktrace(vm)
+        vm.print_stacktrace(options.vardump)
 except KeyboardInterrupt:
     print
-    stacktrace(vm, 6)
+    vm.print_stacktrace(options.vardump)
 except Exception, e:
     print
     print
-    stacktrace(vm, 6)
+    vm.print_stacktrace(options.vardump)
 
     print '%s on line %i:' % (e.__class__.__name__, vm.line),
 
@@ -94,4 +57,3 @@ except Exception, e:
         print
         print '-===[ Python traceback ]===-'
         print traceback.format_exc()
-

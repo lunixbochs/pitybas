@@ -1,4 +1,5 @@
 from collections import defaultdict
+import os
 import time
 import traceback
 
@@ -18,12 +19,15 @@ class Interpreter(object):
     @classmethod
     def from_file(cls, filename, *args, **kwargs):
         string = open(filename, 'r').read().decode('utf8')
-        return Interpreter.from_string(string, *args, **kwargs)
+        vm = Interpreter.from_string(string, *args, **kwargs)
+        vm.name = os.path.basename(filename)
+        return vm
 
-    def __init__(self, code, history=10, io=None):
+    def __init__(self, code, history=10, io=None, name=None):
         if not io: io = IO
         self.io = io(self)
 
+        self.name = name
         self.code = code
         self.code.append([EOF()])
         self.line = 0
@@ -196,6 +200,50 @@ class Interpreter(object):
                     print 'Returned:', e.message
 
         print
+
+    def print_tokens(self):
+        for line in self.code:
+            print (', '.join(repr(n) for n in line)).replace("u'", "'")
+
+    def print_ast(self, start=0, end=None, highlight=None):
+        if end is None:
+            end = len(self.code)
+
+        for i in xrange(max(start, 0), min(end, len(self.code))):
+            line = self.code[i]
+            if i == highlight:
+                print '>>>> {}'.format(line)
+            else:
+                print '{:3}: {}'.format(i, line)
+
+    def print_stacktrace(self, num=None, vardump=False):
+        if not num:
+            num = self.hist_len
+
+        if self.name:
+            print '-===[ Dumping {} ]===-'.format(self.name)
+
+        if self.history:
+            print
+            print '-===[ Stacktrace ]===-'
+
+        for row, col, cur in self.history[-num:]:
+            print ('[{}, {}]:'.format(row, col)).ljust(9), repr(cur).replace("u'", '').replace("'", '')
+
+        if self.history:
+            print
+
+        print '-===[ Code (row {}, col {}) ]===-'.format(self.line, self.col)
+        h = num / 2
+        self.print_ast(self.line - h, self.line + h, highlight=self.line)
+        print
+
+        if vardump:
+            print
+            print '-===[ Variable Dump ]===-'
+            import pprint
+            pprint.pprint(self.vars)
+            print
 
 class Repl(Interpreter):
     def __init__(self, code=[], **kwargs):
