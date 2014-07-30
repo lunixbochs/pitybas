@@ -502,8 +502,8 @@ class Cube(RightExponent):
 class Sqrt(MathExprFunction):
     token = u'√'
 
-    def get(self, vm, args):
-        return math.sqrt(args[0])
+    def call(self, vm, arg):
+        return math.sqrt(arg)
 
 class sqrt(Sqrt): pass
 
@@ -1131,6 +1131,8 @@ class Prompt(Token):
             self.prompt(vm, self.arg)
 
     def prompt(self, vm, var):
+        if isinstance(var, Expression):
+            var = var.flatten()
         val = vm.io.input(var.token + '?')
         var.set(vm, val)
 
