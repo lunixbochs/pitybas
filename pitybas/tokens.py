@@ -155,6 +155,9 @@ class Function(Parent):
         Parent.__init__(self)
 
     def get(self, vm):
+        return self.call(vm, vm.get(self.arg))
+
+    def call(self, vm, args):
         raise NotImplementedError
 
     def __repr__(self):
@@ -164,7 +167,7 @@ class Function(Parent):
             return '%s()' % repr(self.token)
 
 class StubFunction(Function, Stub):
-    def call(self, vm): pass
+    def call(self, vm, args): pass
 
 # variables
 
@@ -195,6 +198,8 @@ class Value(Const, Stub):
 
     def __repr__(self):
         return repr(self.value)
+
+# list/matrix
 
 class List(Variable, Stub):
     absorbs = (Arguments,)
@@ -440,19 +445,11 @@ class Bool(Operator, Stub):
     def run(self, vm, left, right):
         return int(bool(self.bool(left, right)))
 
-class MathFunction(Function, Stub):
-    def get(self, vm):
-        args = vm.get(self.arg)
-        return self.call(vm, args)
-
-    def call(self, vm, arg): raise NotImplementedError
-
-# a MathFunction expecting a single Expression as the argument
-class MathExprFunction(MathFunction, Stub):
+# a Function expecting a single Expression as the argument
+class MathExprFunction(Function, Stub):
     def get(self, vm):
         assert len(self.arg) == 1
         args = vm.get(self.arg)
-
         return self.call(vm, args[0])
 
 class Logic(Bool): priority = Pri.LOGIC
@@ -502,11 +499,11 @@ class Cube(RightExponent):
     def op(self, left, right):
         return left ** 3
 
-class Sqrt(Function):
+class Sqrt(MathExprFunction):
     token = u'√'
 
-    def get(self, vm):
-        return math.sqrt(vm.get(self.arg)[0])
+    def get(self, vm, args):
+        return math.sqrt(args[0])
 
 class sqrt(Sqrt): pass
 
@@ -542,7 +539,7 @@ class Abs(MathExprFunction):
     def call(self, vm, arg):
         return abs(arg)
 
-class gcd(MathFunction):
+class gcd(Function):
     def call(self, vm, args):
         assert len(args) == 1 and isinstance(args[0], list) or len(args) == 2
         if len(args) == 1:
@@ -557,28 +554,28 @@ class gcd(MathFunction):
             a, b = b, (a % b)
         return a
 
-class lcm(MathFunction):
+class lcm(Function):
     def call(self, vm, args):
         assert len(args) == 2
 
         a, b = args
         return a * b / gcd.gcd(a, b)
 
-class Min(MathFunction):
+class Min(Function):
     token = 'min'
 
     def call(self, vm, args):
         assert len(args) == 2
         return min(*args)
 
-class Max(MathFunction):
+class Max(Function):
     token = 'max'
 
     def call(self, vm, args):
         assert len(args) == 2
         return max(*args)
 
-class Round(MathFunction):
+class Round(Function):
     token = 'round'
 
     def call(self, vm, args):
@@ -597,11 +594,11 @@ class Int(MathExprFunction):
     def call(self, vm, arg):
         return math.floor(arg)
 
-class iPart(MathFunction):
+class iPart(Function):
     def call(self, vm, arg):
         return int(arg)
 
-class fPart(MathFunction):
+class fPart(Function):
     def call(self, vm, arg):
         return math.modf(arg)[1]
 
@@ -689,12 +686,12 @@ class rand(Variable):
     def set(self, vm, value):
         random.seed(value)
 
-class rand(MathFunction):
+class rand(Function):
     def call(self, vm, args):
         assert len(args) == 1
         return [random.random() for i in xrange(args[0])]
 
-class randInt(MathFunction):
+class randInt(Function):
     def call(self, vm, args):
         assert len(args) in (2, 3)
 
@@ -706,7 +703,7 @@ class randInt(MathFunction):
 
         return [random.randint(*args[:2]) for i in xrange(args[2])]
 
-class randNorm(MathFunction):
+class randNorm(Function):
     def call(self, vm, args):
         assert len(args) in (2, 3)
 
@@ -717,11 +714,11 @@ class randNorm(MathFunction):
 
         return [random.normalvariate(*args) for i in xrange(n)]
 
-class randBin(MathFunction):
+class randBin(Function):
     def call(self, vm, args):
         raise NotImplementedError # numpy.random has a binomial distribution, or I could write my own...
 
-class randM(MathFunction):
+class randM(Function):
     def call(self, vm, args):
         raise NotImplementedError # I don't know how I'm going to do lists and matricies yet
 
