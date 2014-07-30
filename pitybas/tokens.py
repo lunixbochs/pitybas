@@ -1009,9 +1009,9 @@ class Lbl(StubToken):
         elif isinstance(arg, Variable):
             label = arg.token
         elif isinstance(arg, Expression):
-            label = str(arg)
+            label = unicode(arg.flatten())
 
-        return str(label)
+        return unicode(label)
 
     def get_label(self, vm):
         return Lbl.guess_label(vm, self.arg)
