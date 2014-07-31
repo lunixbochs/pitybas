@@ -435,8 +435,8 @@ class AddSub(Operator, Stub): priority = Pri.ADDSUB
 class MultDiv(FloatOperator, Stub): priority = Pri.MULTDIV
 class Exponent(Operator, Stub): priority = Pri.EXPONENT
 class RightExponent(Exponent, Stub):
-        def fill_right(self):
-                return Value(None)
+    def fill_right(self):
+        return Value(None)
 
 class Bool(Operator, Stub):
     priority = Pri.BOOL
