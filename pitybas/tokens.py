@@ -1096,6 +1096,15 @@ class Disp(Token):
         self.disp(vm, vm.get(cur))
 
     def disp(self, vm, msgs=None):
+        if isinstance(msgs, list):
+            if len(msgs) > 0:
+                if isinstance(msgs[0], list):
+                    out = '[' + str(msgs[0])
+                    for row in msgs[1:]:
+                        out += '\n ' + str(row)
+                    out += ']'
+                    msgs = out
+
         if isinstance(msgs, (tuple, list)):
             for msg in msgs:
                 vm.io.disp(vm.disp_round(msg))
@@ -1195,7 +1204,9 @@ class REPL(Token):
             vm.repl_serial = vm.serial
             ans = vm.vars.get('Ans')
             if ans is not None:
-                vm.io.disp(vm.disp_round(ans))
+                d = Disp()
+                d.arg = Ans()
+                d.run(vm)
 
         code = None
         while not code:
