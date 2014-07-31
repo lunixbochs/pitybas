@@ -1108,6 +1108,10 @@ class Disp(Token):
         self.disp(vm, vm.get(cur))
 
     def disp(self, vm, msgs=None):
+        if msgs is None:
+            vm.io.disp()
+            return
+
         if isinstance(msgs, list):
             if len(msgs) > 0:
                 if isinstance(msgs[0], list):
