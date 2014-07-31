@@ -486,6 +486,18 @@ class Pow(Exponent):
     def op(self, left, right):
         return left ** right
 
+class transpose(RightExponent):
+    token = '_T'
+
+    def op(self, left, right):
+        vm = {'tmp': left}
+        rows, cols = Matrix('tmp').dim(vm)
+        out = [[0] * rows for i in xrange(cols)]
+        for y in xrange(rows):
+            for x in xrange(cols):
+                out[x][y] = left[y][x]
+        return out
+
 # TODO: -¹, ², ³, √(, ³√(, ×√
 class Square(RightExponent):
     token = u'²'
