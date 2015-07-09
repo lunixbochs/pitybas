@@ -614,6 +614,11 @@ class fPart(Function):
     def call(self, vm, arg):
         return math.modf(arg)[1]
 
+class mod(Function):
+    def call(self, vm, args):
+        assert len(args) == 2
+        return args[0] % args[1]
+
 # trig
 
 class sin(MathExprFunction):
