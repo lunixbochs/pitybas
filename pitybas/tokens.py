@@ -626,8 +626,17 @@ class Max(Function):
     token = 'max'
 
     def call(self, vm, args):
-        assert len(args) == 2
-        return max(*args)
+        assert len(args) in (1, 2)
+        if len(args) == 1:
+            assert isinstance(args[0], list)
+            return max(args[0])
+        else:
+            a1, a2 = args
+            if not isinstance(a1, list):
+                a1 = [a1]
+            if not isinstance(a2, list):
+                a2 = [a2]
+            return max(a1 + a2)
 
 class Round(Function):
     token = 'round'
