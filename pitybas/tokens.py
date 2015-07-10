@@ -669,6 +669,11 @@ class mod(Function):
         assert len(args) == 2
         return args[0] % args[1]
 
+class expr(MathExprFunction):
+    def call(self, vm, arg):
+        from parse import Parser, ParseError
+        return Parser.parse_line(vm, arg)
+
 # trig
 
 class sin(MathExprFunction):
