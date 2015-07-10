@@ -271,7 +271,7 @@ class Matrix(Variable, Stub):
 
             a, b = value
             try:
-                m = vm.get_matrix(name)
+                m = vm.get_matrix(self.name)
             except KeyError:
                 m = [[]]
 
@@ -281,9 +281,9 @@ class Matrix(Variable, Stub):
                 m.append(n)
 
             m = [l[:b] + ([0] * (b - len(l))) for l in m]
-            vm.set_matrix(name, m)
+            vm.set_matrix(self.name, m)
         else:
-            val = vm.get(self.name)
+            val = vm.get_matrix(self.name)
             return [len(val), len(val[0])]
 
     def get(self, vm):
