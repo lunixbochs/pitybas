@@ -959,7 +959,8 @@ class Then(Token):
 class Else(Token):
     def run(self, vm):
         row, col, block = vm.pop_block()
-        end = self.find_end(vm)
+        assert isinstance(block, If)
+        end = block.find_end(vm)
         if end:
             row, col, end = end
         else:
@@ -985,9 +986,10 @@ class Loop(Block, Stub):
             vm.push_block((row, col, self))
             vm.inc()
         else:
-            self.stop(vm)
+            self.stop(vm, row, col)
 
-    def stop(self, vm):
+    def stop(self, vm, row, col):
+        vm.goto(row, col)
         end = self.find_end(vm)
         if end:
             row, col, end = end
@@ -1011,30 +1013,32 @@ class For(Loop, Function):
     def loop(self, vm):
         if len(self.arg) in (3, 4):
             var = self.arg.contents[0]
-            args = [vm.get(arg) for arg in self.arg.contents[1:]]
+            args = self.arg.contents[1:]
 
-            forward = True
             if len(args) == 3:
-                inc = args[2]
+                inc = vm.get(args[2])
                 args = args[:2]
-                forward = False
             else:
                 inc = 1
-
+            forward = inc > 0
             start, end = args
 
             if self.pos is None:
-                self.pos = start
+                self.pos = vm.get(start)
             else:
                 self.pos += inc
 
             var.set(vm, self.pos)
-            if forward and self.pos > end or not forward and self.pos < end:
+            if forward and self.pos > vm.get(end) or not forward and self.pos < vm.get(end):
                 return False
             else:
                 return True
         else:
             raise ExecutionError('incorrect arguments to For loop')
+
+    def stop(self, vm, row, col):
+        self.pos = None
+        Loop.stop(self, vm, row, col)
 
 class End(Token):
     def run(self, vm):
@@ -1055,9 +1059,10 @@ class Continue(Token):
 
 class Break(Token):
     def run(self, vm):
-        for row, col, block in reversed(vm.blocks):
+        for i, (row, col, block) in enumerate(reversed(vm.blocks)):
             if not isinstance(block, If):
                 block.stop(vm, row, col)
+                vm.blocks = vm.blocks[:-i - 1]
                 break
         else:
             raise ExecutionError('Break could not find a block to end')
