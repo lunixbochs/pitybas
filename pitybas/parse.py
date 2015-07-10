@@ -14,6 +14,7 @@ class Parser:
     TOKENS = tokens.Token.tokens.keys()
     VARIABLES = tokens.Variable.tokens.keys()
     FUNCTIONS = tokens.Function.tokens.keys()
+    OPERATORS = tokens.Operator.tokens.keys()
     TOKENS += VARIABLES + FUNCTIONS
 
     TOKENS.sort()
@@ -37,7 +38,7 @@ class Parser:
         if not line: return
 
         parser = Parser(line)
-        parser.TOKENS = parser.VARIABLES + parser.FUNCTIONS
+        parser.TOKENS = parser.VARIABLES + parser.FUNCTIONS + parser.OPERATORS
 
         parser.SYMBOLS = []
         for t in parser.TOKENS:
