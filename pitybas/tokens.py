@@ -648,11 +648,11 @@ class Int(MathExprFunction):
     def call(self, vm, arg):
         return math.floor(arg)
 
-class iPart(Function):
+class iPart(MathExprFunction):
     def call(self, vm, arg):
         return int(arg)
 
-class fPart(Function):
+class fPart(MathExprFunction):
     def call(self, vm, arg):
         return math.modf(arg)[1]
 
