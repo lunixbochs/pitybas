@@ -354,6 +354,24 @@ class Fill(Function):
 
             var.set(vm, m)
 
+class seq(Function):
+    def get(self, vm):
+        assert self.arg and len(self.arg) in (4, 5)
+        arg = self.arg.contents
+        expr = arg[0]
+        var = arg[1].flatten()
+        assert isinstance(var, Variable)
+        assert isinstance(expr, Expression)
+        step = 1
+        if len(arg) == 5:
+            step = vm.get(arg[4])
+        out = []
+        start, end = vm.get(arg[2]), vm.get(arg[3])
+        for i in xrange(start, end + 1, step):
+            vm.set_var(var.token, i)
+            out.append(vm.get(expr))
+        return out
+
 class Ans(Const):
     def get(self, vm): return vm.get_var('Ans')
 
