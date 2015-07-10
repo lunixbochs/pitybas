@@ -656,6 +656,14 @@ class fPart(MathExprFunction):
     def call(self, vm, arg):
         return math.modf(arg)[1]
 
+class floor(MathExprFunction):
+    def call(self, vm, arg):
+        return math.floor(arg)
+
+class ceiling(MathExprFunction):
+    def call(self, vm, arg):
+        return math.ceil(arg)
+
 class mod(Function):
     def call(self, vm, args):
         assert len(args) == 2
