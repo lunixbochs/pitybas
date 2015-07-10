@@ -210,7 +210,7 @@ class List(Variable, Stub):
 
     def dim(self, vm, value=None):
         if value is not None:
-            assert isinstance(value, int)
+            assert isinstance(value, (int, long))
 
             try:
                 l = vm.get_list(self.name)
@@ -225,7 +225,7 @@ class List(Variable, Stub):
     def get(self, vm):
         if self.arg:
             arg = vm.get(self.arg)[0]
-            assert isinstance(arg, int)
+            assert isinstance(arg, (int, long))
             return vm.get_list(self.name)[arg-1]
 
         return vm.get_list(self.name)
@@ -233,8 +233,8 @@ class List(Variable, Stub):
     def set(self, vm, value):
         if self.arg:
             arg = vm.get(self.arg)[0]
-            assert isinstance(arg, int)
-            assert isinstance(value, (int, float, complex))
+            assert isinstance(arg, (int, long))
+            assert isinstance(value, (int, long, float, complex))
 
             l = vm.get_list(self.name)
             i = arg - 1
@@ -298,7 +298,7 @@ class Matrix(Variable, Stub):
         if self.arg:
             arg = vm.get(self.arg)
             assert isinstance(arg, list) and len(arg) == 2
-            assert isinstance(value, (int, float, complex))
+            assert isinstance(value, (int, long, float, complex))
 
             m = vm.get_matrix(self.name)
             m[arg[0]-1][arg[1]-1] = value
@@ -336,7 +336,7 @@ class Fill(Function):
         var = var.flatten()
         num = vm.get(num)
 
-        assert isinstance(num, (int, float, complex))
+        assert isinstance(num, (int, long, float, complex))
         assert isinstance(var, (List, Matrix))
 
         if isinstance(var, List):
@@ -444,10 +444,10 @@ class FloatOperator(Operator, Stub):
     @get
     def run(self, vm, left, right):
         # TODO: be smarter about when to coerce to float
-        if isinstance(left, int):
+        if isinstance(left, (int, long)):
             left = float(left)
 
-        if isinstance(right, int):
+        if isinstance(right, (int, long)):
             right = float(right)
 
         ans = self.op(float(left), float(right))
@@ -881,7 +881,7 @@ class GreaterOrEqualsToken(GreaterOrEquals):
 
 class inString(Function):
     def call(self, vm, args):
-        assert len(args) == 2 or len(args) == 3 and isinstance(args[2], int)
+        assert len(args) == 2 or len(args) == 3 and isinstance(args[2], (int, long))
         assert isinstance(args[0], basestring) and isinstance(args[1], basestring)
         haystack = args[0]
         needle = args[1]
