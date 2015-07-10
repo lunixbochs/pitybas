@@ -595,9 +595,25 @@ class gcd(Function):
 class lcm(Function):
     def call(self, vm, args):
         assert len(args) == 2
-
         a, b = args
+        if isinstance(a, list):
+            a = self.lcm_list(*a)
+        if isinstance(b, list):
+            a = self.lcm_list(*b)
+        return self.lcm(a, b)
+
+    @staticmethod
+    def lcm(a, b):
         return a * b / gcd.gcd(a, b)
+
+    @classmethod
+    def lcm_list(cls, *args):
+        args = list(args)
+        a = args.pop(0)
+        while args:
+            b = args.pop(0)
+            a = cls.lcm(a, b)
+        return a
 
 class Min(Function):
     token = 'min'
