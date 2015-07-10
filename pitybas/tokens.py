@@ -372,6 +372,14 @@ class seq(Function):
             out.append(vm.get(expr))
         return out
 
+class Sum(Function):
+    token = 'sum'
+
+    def get(self, vm):
+        assert self.arg and len(self.arg) == 1
+        arg = self.arg.flatten()
+        return sum(vm.get(arg))
+
 class Ans(Const):
     def get(self, vm): return vm.get_var('Ans')
 
