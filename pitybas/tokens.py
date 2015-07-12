@@ -331,6 +331,21 @@ class dim(Function):
         arg.dim(vm, value)
         return value
 
+class augment(Function):
+    def get(self, vm):
+        assert self.arg and len(self.arg) == 2
+        a = self.arg.contents[0].flatten()
+        b = self.arg.contents[1].flatten()
+        if isinstance(a, (List, ListExpr)) and isinstance(b, (List, ListExpr)):
+            return vm.get(a) + vm.get(b)
+        elif isinstance(a, (Matrix, MatrixExpr)) and isinstance(b, (Matrix, MatrixExpr)):
+            a = vm.get(a)
+            b = vm.get(b)
+            assert len(a) == len(b)
+            return [left + b[i] for i, left in enumerate(a)]
+        else:
+            raise ExecutionError('augment() requires List, List or Matrix, Matrix')
+
 class Fill(Function):
     def run(self, vm):
         assert self.arg and len(self.arg) == 2
