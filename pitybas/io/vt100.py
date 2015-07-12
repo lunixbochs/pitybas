@@ -1,3 +1,8 @@
+try:
+    import readline
+except ImportError:
+    pass
+
 from pitybas.parse import Parser
 from pitybas.common import ParseError
 
