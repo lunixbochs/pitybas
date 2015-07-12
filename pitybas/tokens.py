@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import decimal
 import fractions
 import math
 import random
@@ -444,13 +445,12 @@ class FloatOperator(Operator, Stub):
     @get
     def run(self, vm, left, right):
         # TODO: be smarter about when to coerce to float
-        if isinstance(left, (int, long)):
-            left = float(left)
+        if isinstance(left, (int, long)) or isinstance(right, (int, long)):
+            decimal.getcontext().prec = max(len(str(left)), len(str(right)))
+            left = decimal.Decimal(left)
+            right = decimal.Decimal(right)
 
-        if isinstance(right, (int, long)):
-            right = float(right)
-
-        ans = self.op(float(left), float(right))
+        ans = self.op(left, right)
         # 14 digits of precision?
         if abs(ans - int(ans)) < 0.00000000000001:
             ans = int(ans)
