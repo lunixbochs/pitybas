@@ -1175,6 +1175,8 @@ class Disp(Token):
 
     @staticmethod
     def format_matrix(data):
+        if isinstance(data, int):
+            return data
         out = '[' + str(data[0])
         for row in data[1:]:
             out += '\n ' + str(row)
