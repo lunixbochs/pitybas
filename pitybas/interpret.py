@@ -1,4 +1,5 @@
 from collections import defaultdict
+import decimal
 import os
 import time
 import traceback
@@ -158,7 +159,7 @@ class Interpreter(object):
         return ret
 
     def disp_round(self, num):
-        if not isinstance(num, (int, float, complex)):
+        if not isinstance(num, (decimal.Decimal, int, long, float, complex)):
             return num
 
         if self.fixed < 0:
