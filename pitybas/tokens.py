@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import datetime
 import decimal
 import fractions
 import math
@@ -1336,3 +1337,11 @@ class REPL(Token):
             vm.code.insert(self.line, line)
 
         vm.line, vm.col = self.line, self.col
+
+# date commands
+
+class dayOfWk(Function):
+    def call(self, vm, args):
+        assert len(args) == 3
+        date = datetime.datetime(year=args[0], month=args[1], day=args[2])
+        return date.isoweekday() % 7 + 1
