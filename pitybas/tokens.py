@@ -5,7 +5,7 @@ import random
 import string
 
 from common import Pri, ExecutionError, StopError, ReturnError
-from expression import Tuple, Expression, Arguments
+from expression import Tuple, Expression, Arguments, ListExpr, MatrixExpr
 
 # helpers
 
@@ -1173,38 +1173,52 @@ class Fix(Token):
 class Disp(Token):
     absorbs = (Expression, Variable, Tuple)
 
+    @staticmethod
+    def format_matrix(data):
+        out = '[' + str(data[0])
+        for row in data[1:]:
+            out += '\n ' + str(row)
+        out += ']'
+        return out
+
     def run(self, vm):
         cur = self.arg
         if not cur:
             self.disp(vm)
             return
 
-        self.disp(vm, vm.get(cur))
+        data = None
+        if isinstance(cur, ListExpr):
+            data = str(vm.get(cur))
+        elif isinstance(cur, (MatrixExpr, Matrix)):
+            data = self.format_matrix(vm.get(cur))
+        elif isinstance(cur, Tuple):
+            items = []
+            for arg in cur.contents:
+                data = vm.get(arg)
+                if isinstance(arg, ListExpr):
+                    items.append(str(data))
+                elif isinstance(arg, (MatrixExpr, Matrix)):
+                    items.append(self.format_matrix(data))
+                else:
+                    items.append(data)
+            self.disp(vm, *items)
+            return
+        else:
+            data = vm.get(cur)
+        self.disp(vm, data)
 
-    def disp(self, vm, msgs=None):
-        if msgs is None:
+    def disp(self, vm, *msgs):
+        if not msgs:
             vm.io.disp()
             return
-
-        if isinstance(msgs, list):
-            if len(msgs) > 0:
-                if isinstance(msgs[0], list):
-                    out = '[' + str(msgs[0])
-                    for row in msgs[1:]:
-                        out += '\n ' + str(row)
-                    out += ']'
-                    msgs = out
-
-        if isinstance(msgs, (tuple, list)):
-            for msg in msgs:
-                vm.io.disp(vm.disp_round(msg))
-        else:
-            vm.io.disp(vm.disp_round(msgs))
+        for msg in msgs:
+            vm.io.disp(vm.disp_round(msg))
 
 class Print(Disp):
     absorbs = (Expression, Variable, Tuple)
 
-    def disp(self, vm, msgs=None):
+    def disp(self, vm, *msgs):
         if isinstance(msgs, (tuple, list)):
             vm.io.disp(', '.join(str(vm.disp_round(x)) for x in msgs))
         else:
