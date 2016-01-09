@@ -912,7 +912,7 @@ class sub(Function):
         s = args[0]
         a, b = args[1], args[2]
         assert a > 0 and b < len(s)
-        return s[a:a + b]
+        return s[a - 1:a - 1 + b]
 
 class length(Function):
     def call(self, vm, args):
