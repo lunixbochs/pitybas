@@ -1360,3 +1360,10 @@ class dayOfWk(Function):
         assert len(args) == 3
         date = datetime.datetime(year=args[0], month=args[1], day=args[2])
         return date.isoweekday() % 7 + 1
+
+# file IO (not in original TI-Basic)
+
+class ReadFile(Function):
+    def call(self, vm, args):
+        assert len(args) == 1
+        return open(args[0], 'r').read()
